@@ -91,18 +91,10 @@ function formatDate(date) {
 
 function maybePlaySound(newestOrderId) {
   if (!soundArmed || !newestOrderId || newestOrderId === lastKnownOrderId) return;
-  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  const oscillator = audioContext.createOscillator();
-  const gainNode = audioContext.createGain();
-  oscillator.type = 'sine';
-  oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
-  oscillator.connect(gainNode);
-  gainNode.connect(audioContext.destination);
-  gainNode.gain.setValueAtTime(0.0001, audioContext.currentTime);
-  gainNode.gain.exponentialRampToValueAtTime(0.18, audioContext.currentTime + 0.02);
-  gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.7);
-  oscillator.start();
-  oscillator.stop(audioContext.currentTime + 0.7);
+  
+  const audio = new Audio('public/new-order.mp3');
+  audio.play().catch(e => console.error("Error reproduciendo sonido:", e));
+  
   lastKnownOrderId = newestOrderId;
   localStorage.setItem(storage.lastOrderSound, newestOrderId);
 }
