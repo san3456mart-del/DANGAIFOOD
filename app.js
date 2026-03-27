@@ -52,10 +52,11 @@ let paymentReceiptBase64 = null;
 
 const money = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(n || 0));
 const getJson = (key, fallback) => JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
-const setJson = async (key, value) => {
+const setJson = (key, value) => {
   localStorage.setItem(key, JSON.stringify(value));
-  if (window.FirebaseDB && (key === storage.products || key === storage.orders || key === storage.users || key === storage.settings)) {
-    await window.FirebaseDB.save(key, value);
+  // Fire-and-forget to Firebase – never block the UI
+  if (window.FirebaseDB) {
+    window.FirebaseDB.save(key, value).catch(err => console.warn('Firebase sync error:', err));
   }
 };
 const escapeHTML = (value) => String(value || '')
@@ -346,6 +347,22 @@ if (tabLoginBtn && tabRegisterBtn) {
   });
 }
 
+// Read users from Firebase with a timeout fallback to localStorage
+async function readUsersSafe() {
+  const local = getJson(storage.users, []);
+  if (!window.FirebaseDB) return local;
+  try {
+    const timeout = new Promise(resolve => setTimeout(() => resolve(null), 5000));
+    const fbRead = window.FirebaseDB.readOnce(storage.users);
+    const result = await Promise.race([fbRead, timeout]);
+    if (Array.isArray(result)) {
+      localStorage.setItem(storage.users, JSON.stringify(result));
+      return result;
+    }
+  } catch (e) { console.warn('Firebase read failed, using local cache:', e); }
+  return local;
+}
+
 if (loginFormClient) {
   loginFormClient.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -357,23 +374,9 @@ if (loginFormClient) {
     btn.disabled = true;
     btn.textContent = 'Verificando...';
     try {
-      // ALWAYS read from Firebase to support cross-device login
-      let users = null;
-      if (window.FirebaseDB) {
-        users = await window.FirebaseDB.readOnce(storage.users);
-      }
-      // Fallback to localStorage if Firebase unavailable
-      if (!Array.isArray(users)) {
-        users = getJson(storage.users, []);
-      } else {
-        // Sync to local cache
-        localStorage.setItem(storage.users, JSON.stringify(users));
-      }
-
+      const users = await readUsersSafe();
       const user = users.find(u => u.username === loginUser && u.password === loginPass);
-      if (!user) {
-        return toastMessage('Usuario o contraseña incorrectos.');
-      }
+      if (!user) return toastMessage('Usuario o contraseña incorrectos.');
       localStorage.setItem(storage.profile, JSON.stringify(user));
       loadProfile();
       setStep(2);
@@ -397,21 +400,10 @@ profileForm.addEventListener('submit', async (e) => {
   btn.disabled = true;
   btn.textContent = 'Guardando...';
   try {
-    // ALWAYS read fresh list from Firebase before registering
-    let users = null;
-    if (window.FirebaseDB) {
-      users = await window.FirebaseDB.readOnce(storage.users);
-    }
-    if (!Array.isArray(users)) {
-      users = getJson(storage.users, []);
-    } else {
-      localStorage.setItem(storage.users, JSON.stringify(users));
-    }
-
+    const users = await readUsersSafe();
     if (users.some(u => u.username === regUser)) {
       return toastMessage('Ese usuario ya existe. Inicia sesión.');
     }
-
     const profile = {
       clientId: crypto.randomUUID(),
       username: regUser,
@@ -422,16 +414,14 @@ profileForm.addEventListener('submit', async (e) => {
       tower: document.getElementById('tower').value.trim(),
       apartment: document.getElementById('apartment').value.trim()
     };
-
     users.push(profile);
-    // Save to Firebase first, then proceed
-    await setJson(storage.users, users);
+    setJson(storage.users, users);  // fire-and-forget to Firebase
     localStorage.setItem(storage.profile, JSON.stringify(profile));
     loadProfile();
     setStep(2);
-    toastMessage('¡Cuenta creada exitosamente! 🎉');
+    toastMessage('¡Cuenta creada! 🎉');
   } catch (err) {
-    toastMessage('Error al guardar. Verifica tu conexión.');
+    toastMessage('Error al guardar. Intenta nuevamente.');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Registrarme y ordenar';
