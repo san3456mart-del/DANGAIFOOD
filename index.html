@@ -30,7 +30,7 @@
     </div>
     <div class="topbar-actions">
       <button id="goToOrdersBtn" class="pill accent" style="font-weight: 800; border-color: var(--primary);">🔥 Mis Pedidos</button>
-      <button id="editProfileBtn" class="ghost-btn">Editar datos</button>
+      <button id="editProfileBtn" class="ghost-btn">Cerrar sesión</button>
       <a class="ghost-btn" href="admin.html">Admin</a>
     </div>
   </header>
@@ -55,35 +55,73 @@
       </div>
 
       <section class="wizard-panel active" data-step="1" id="profileCard">
-        <div class="section-title-row">
-          <div>
-            <p class="section-kicker">Paso 1</p>
-            <h2>Registro del cliente</h2>
-          </div>
-          <span class="pill" id="profileStatus">Pendiente</span>
+        <div class="tabs" style="margin-bottom: 20px; display: flex; gap: 8px;">
+          <button type="button" class="tab-btn active" id="tabLoginBtn" style="flex:1;">Ingresar</button>
+          <button type="button" class="tab-btn" id="tabRegisterBtn" style="flex:1;">Crear cuenta</button>
         </div>
-        <p class="helper-text">Primero guarda tus datos para continuar al menú.</p>
-        <form id="profileForm" class="grid-form narrow-form">
-          <label>
-            Nombre completo
-            <input type="text" id="name" required placeholder="Ej. Jeferson" />
-          </label>
-          <label>
-            Conjunto
-            <input type="text" id="complex" required placeholder="Ej. Mirador del Lago" />
-          </label>
-          <label>
-            Torre
-            <input type="text" id="tower" required placeholder="Ej. Torre 3" />
-          </label>
-          <label>
-            Apartamento
-            <input type="text" id="apartment" required placeholder="Ej. 504" />
-          </label>
-          <div class="form-actions full-width wizard-actions-row">
-            <button type="submit" class="primary-btn">Guardar y continuar</button>
+
+        <div id="loginView">
+          <div class="section-title-row">
+            <div>
+              <p class="section-kicker">Paso 1</p>
+              <h2>Iniciar sesión</h2>
+            </div>
+            <span class="pill" id="profileStatus">Desconectado</span>
           </div>
-        </form>
+          <p class="helper-text">Bienvenido de vuelta, ingresa para continuar tus pedidos.</p>
+          <form id="loginFormClient" class="grid-form narrow-form">
+            <label class="full-width">
+              Usuario
+              <input type="text" id="loginUser" required placeholder="Ej. jperez" />
+            </label>
+            <label class="full-width">
+              Contraseña
+              <input type="password" id="loginPass" required placeholder="Tu contraseña" />
+            </label>
+            <div class="form-actions full-width wizard-actions-row">
+              <button type="submit" class="primary-btn">Ingresar y ordenar</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="registerView" class="hidden">
+          <div class="section-title-row">
+            <div>
+              <p class="section-kicker">Paso 1</p>
+              <h2>Registro de cliente</h2>
+            </div>
+          </div>
+          <p class="helper-text">Crea tu usuario para guardar direcciones y ver tu historial en vivo.</p>
+          <form id="profileForm" class="grid-form narrow-form">
+            <label class="full-width">
+              Crea un usuario
+              <input type="text" id="regUser" required placeholder="Ej. jperez" />
+            </label>
+            <label class="full-width">
+              Crea una contraseña
+              <input type="password" id="regPass" required placeholder="Mín. 4 caracteres" minlength="4" />
+            </label>
+            <label class="full-width" style="margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px;">
+              Nombre completo
+              <input type="text" id="name" required placeholder="Ej. Jeferson" />
+            </label>
+            <label>
+              Conjunto/Barrio
+              <input type="text" id="complex" required placeholder="Ej. Mirador del Lago" />
+            </label>
+            <label>
+              Torre
+              <input type="text" id="tower" required placeholder="Ej. Torre 3" />
+            </label>
+            <label>
+              Apartamento
+              <input type="text" id="apartment" required placeholder="Ej. 504" />
+            </label>
+            <div class="form-actions full-width wizard-actions-row">
+              <button type="submit" class="primary-btn">Registrarme y ordenar</button>
+            </div>
+          </form>
+        </div>
       </section>
 
       <section class="wizard-panel" data-step="2">

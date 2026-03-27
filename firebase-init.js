@@ -34,7 +34,8 @@
   };
 
   const keys = window.RestaurantAppConfig.storageKeys;
-  // Solo sincronizamos productos y ordenes para no cruzar perfiles de usuario
+  // Solo sincronizamos productos, ordenes y usuarios para el sistema
   window.FirebaseDB.syncKey(keys.products);
   window.FirebaseDB.syncKey(keys.orders);
+  if (keys.users) window.FirebaseDB.syncKey(keys.users);
 })();

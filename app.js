@@ -3,6 +3,11 @@ const storage = cfg.storageKeys;
 const sizes = cfg.sizes;
 
 const profileForm = document.getElementById('profileForm');
+const tabLoginBtn = document.getElementById('tabLoginBtn');
+const tabRegisterBtn = document.getElementById('tabRegisterBtn');
+const loginView = document.getElementById('loginView');
+const registerView = document.getElementById('registerView');
+const loginFormClient = document.getElementById('loginFormClient');
 const editProfileBtn = document.getElementById('editProfileBtn');
 const profileStatus = document.getElementById('profileStatus');
 const sizeTabs = document.getElementById('sizeTabs');
@@ -40,7 +45,7 @@ const money = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currenc
 const getJson = (key, fallback) => JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
 const setJson = (key, value) => {
   localStorage.setItem(key, JSON.stringify(value));
-  if (window.FirebaseDB && (key === storage.products || key === storage.orders)) {
+  if (window.FirebaseDB && (key === storage.products || key === storage.orders || key === storage.users)) {
     window.FirebaseDB.save(key, value);
   }
 };
@@ -92,25 +97,16 @@ function updateFloatingCart() {
   }
 }
 
-function lockProfileInputs(disabled) {
-  Array.from(profileForm.elements).forEach((el) => {
-    if (el.tagName === 'INPUT') el.disabled = disabled;
-  });
-}
-
 function loadProfile() {
   const profile = getJson(storage.profile, null);
+  const statusEl = document.getElementById('profileStatus');
   if (!profile) {
-    profileStatus.textContent = 'Pendiente';
-    lockProfileInputs(false);
+    if (statusEl) statusEl.textContent = 'Desconectado';
+    if (editProfileBtn) editProfileBtn.classList.add('hidden');
     return false;
   }
-  document.getElementById('name').value = profile.name || '';
-  document.getElementById('complex').value = profile.complex || '';
-  document.getElementById('tower').value = profile.tower || '';
-  document.getElementById('apartment').value = profile.apartment || '';
-  lockProfileInputs(true);
-  profileStatus.textContent = 'Guardado';
+  if (statusEl) statusEl.textContent = profile.username;
+  if (editProfileBtn) editProfileBtn.classList.remove('hidden');
   return true;
 }
 
@@ -300,28 +296,77 @@ function submitOrder() {
   toastMessage(`Pedido ${order.id} guardado. Puedes seguir su estado aquí.`);
 }
 
+if (tabLoginBtn && tabRegisterBtn) {
+  tabLoginBtn.addEventListener('click', () => {
+    tabLoginBtn.classList.add('active');
+    tabRegisterBtn.classList.remove('active');
+    loginView.classList.remove('hidden');
+    registerView.classList.add('hidden');
+  });
+  tabRegisterBtn.addEventListener('click', () => {
+    tabRegisterBtn.classList.add('active');
+    tabLoginBtn.classList.remove('active');
+    registerView.classList.remove('hidden');
+    loginView.classList.add('hidden');
+  });
+}
+
+if (loginFormClient) {
+  loginFormClient.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const loginUser = document.getElementById('loginUser').value.trim().toLowerCase();
+    const loginPass = document.getElementById('loginPass').value.trim();
+    const users = getJson(storage.users, []);
+
+    const user = users.find(u => u.username === loginUser && u.password === loginPass);
+    if (!user) {
+      return toastMessage('Usuario o contraseña incorrectos.');
+    }
+
+    setJson(storage.profile, user);
+    loadProfile();
+    setStep(2);
+    toastMessage(`Bienvenido de vuelta, ${user.name}`);
+  });
+}
+
 profileForm.addEventListener('submit', (e) => {
   e.preventDefault();
-  const existing = getJson(storage.profile, null) || {};
+  const regUser = document.getElementById('regUser').value.trim().toLowerCase();
+  const regPass = document.getElementById('regPass').value.trim();
+  const users = getJson(storage.users, []);
+
+  if (users.some(u => u.username === regUser)) {
+    return toastMessage('Ese usuario ya existe. Inicia sesión.');
+  }
+
   const profile = {
-    ...existing,
-    clientId: existing.clientId || crypto.randomUUID(),
+    clientId: crypto.randomUUID(),
+    username: regUser,
+    password: regPass,
     name: document.getElementById('name').value.trim(),
     complex: document.getElementById('complex').value.trim(),
     tower: document.getElementById('tower').value.trim(),
     apartment: document.getElementById('apartment').value.trim()
   };
+
+  users.push(profile);
+  setJson(storage.users, users);
+  
   setJson(storage.profile, profile);
   loadProfile();
   setStep(2);
-  toastMessage('Tus datos quedaron guardados.');
+  toastMessage('Cuenta creada exitosamente.');
 });
 
-editProfileBtn.addEventListener('click', () => {
-  lockProfileInputs(false);
-  profileStatus.textContent = 'Editando';
-  setStep(1);
-});
+if (editProfileBtn) {
+  editProfileBtn.addEventListener('click', () => {
+    localStorage.removeItem(storage.profile);
+    setStep(1);
+    toastMessage('Sesión cerrada.');
+    loadProfile();
+  });
+}
 
 goToConfirmBtn.addEventListener('click', () => {
   if (!getJson(storage.profile, null)) return toastMessage('Primero guarda tus datos.');
