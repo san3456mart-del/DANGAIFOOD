@@ -559,6 +559,28 @@ window.submitReview = (orderId) => {
   }
 };
 
+const ORDER_LIMIT_MS = 45 * 60 * 1000; // 45 minutes
+
+function getCountdownData(createdAt) {
+  const elapsed = Date.now() - new Date(createdAt).getTime();
+  const remaining = ORDER_LIMIT_MS - elapsed;
+  if (remaining <= 0) return { text: '¡Tiempo superado!', urgent: true, exceeded: true };
+  const mins = Math.floor(remaining / 60000);
+  const secs = Math.floor((remaining % 60000) / 1000);
+  const pad = n => String(n).padStart(2, '0');
+  return { text: `${pad(mins)}:${pad(secs)}`, urgent: mins < 5, exceeded: false };
+}
+
+// Tick all countdown spans every second without re-rendering
+setInterval(() => {
+  document.querySelectorAll('.order-countdown[data-created]').forEach(el => {
+    const data = getCountdownData(el.dataset.created);
+    el.textContent = data.text;
+    el.style.color = data.exceeded ? '#dc2626' : data.urgent ? '#f59e0b' : '#16a34a';
+    el.style.borderColor = data.exceeded ? '#dc2626' : data.urgent ? '#f59e0b' : '#16a34a';
+  });
+}, 1000);
+
 function renderOrdersHistory() {
   if (!clientOrdersList) return;
   const profile = getJson(storage.profile, null);
@@ -597,6 +619,15 @@ function renderOrdersHistory() {
               <span>${labels[idx]}</span>
             </div>
           `).join('')}
+        </div>
+        <div style="margin-top:14px;display:flex;justify-content:center;">
+          <div style="display:inline-flex;align-items:center;gap:8px;background:#f0fdf4;border:2px solid #16a34a;border-radius:12px;padding:8px 18px;">
+            <span style="font-size:1.2rem;">⏱️</span>
+            <div style="text-align:center;">
+              <div style="font-size:0.72rem;color:#6b7280;font-weight:600;letter-spacing:0.05em;">TIEMPO RESTANTE</div>
+              <span class="order-countdown" data-created="${order.createdAt}" style="font-size:1.4rem;font-weight:800;color:#16a34a;border:none;font-variant-numeric:tabular-nums;line-height:1.1;">45:00</span>
+            </div>
+          </div>
         </div>
         <div style="margin-top: 16px; display:flex; justify-content:center;">
           <button class="primary-btn" style="background:#25D366; border-color:#25D366;" onclick="window.openWhatsappForOrder('${order.id}')">Escríbenos por WhatsApp</button>
