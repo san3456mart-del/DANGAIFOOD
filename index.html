@@ -51,6 +51,11 @@
           <span>3</span>
           <strong>Confirmación</strong>
         </div>
+        <div class="wizard-line"></div>
+        <div class="wizard-step" data-step-indicator="4">
+          <span>4</span>
+          <strong>Mis Pedidos</strong>
+        </div>
       </div>
 
       <section class="wizard-panel active" data-step="1" id="profileCard">
@@ -137,6 +142,24 @@
           <button id="submitOrderBtn" class="primary-btn">Enviar pedido</button>
         </div>
         <p class="helper-text">El pedido se guarda en el panel del administrador y también se abre WhatsApp con el mensaje listo para enviar.</p>
+      </section>
+
+      <section class="wizard-panel" data-step="4">
+        <div class="section-title-row">
+          <div>
+            <p class="section-kicker">Seguimiento</p>
+            <h2>Historial y estado</h2>
+          </div>
+          <span class="pill accent">En vivo</span>
+        </div>
+        <p class="helper-text">Revisa el estado de tus pedidos recientes y su avance en tiempo real.</p>
+        <div id="clientOrdersList" class="order-list">
+          <div class="empty-state">No tienes pedidos recientes.</div>
+        </div>
+        <div class="wizard-actions-row wizard-actions-bottom">
+          <button type="button" class="ghost-btn" id="historyToProfileBtn">Editar mis datos</button>
+          <button type="button" class="primary-btn" id="historyToMenuBtn">Hacer otro pedido</button>
+        </div>
       </section>
     </section>
   </main>

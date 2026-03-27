@@ -158,6 +158,28 @@ th { color: var(--muted); font-size: .85rem; text-transform: uppercase; letter-s
 .floating-cart button { margin: 0; padding: 12px 20px; border-radius: 999px; font-size: 0.95rem; background: var(--primary); color: #fff; box-shadow: none; font-weight: 700; }
 .floating-cart button:hover { transform: scale(1.02); }
 
+/* Tracking Tracker */
+.tracker-steps { display: flex; justify-content: space-between; margin-top: 16px; padding: 10px 0; position: relative; }
+.tracker-steps::before { content: ''; position: absolute; top: 16px; left: 10%; right: 10%; height: 4px; background: var(--line); border-radius: 4px; z-index: 1; }
+.tracker-step { display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 2; flex: 1; }
+.tracker-dot { width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 4px solid var(--line); transition: 0.3s; }
+.tracker-step.active .tracker-dot { border-color: var(--primary); background: var(--primary); box-shadow: 0 0 0 3px rgba(255,69,0,0.2); }
+.tracker-step span { font-size: 0.75rem; color: var(--muted); font-weight: 600; text-align: center; }
+.tracker-step.active span { color: var(--text); }
+
+/* Tracker Delivered & Rating */
+.tracker-delivered { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); text-align: center; }
+.tracker-delivered > strong { color: var(--success); font-size: 1.1rem; }
+.rating-box { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; align-items: stretch; background: #f9fafb; padding: 16px; border-radius: 16px; }
+.rating-box p { margin: 0; font-size: 0.9rem; font-weight: 600; color: var(--text); }
+.stars { display: flex; justify-content: center; gap: 8px; margin: 4px 0; }
+.star-btn { background: none; border: none; font-size: 2rem; color: #d1d5db; padding: 0; margin: 0; box-shadow: none !important; transition: 0.2s; }
+.star-btn:hover { transform: scale(1.1); color: var(--warning) !important; }
+.mt-2 { margin-top: 8px; }
+.rating-done { margin-top: 12px; padding: 12px; background: #f9fafb; border-radius: 12px; text-align: left; }
+.rating-done p { margin: 4px 0 0; }
+.rating-done p:first-child { color: var(--warning); font-size: 1.1rem; letter-spacing: 2px; }
+
 @media (max-width: 860px) {
   .stats-grid, .inventory-grid, .inventory-grid-wide, .grid-form { grid-template-columns: 1fr; }
   .size-edit-grid { grid-template-columns: 1fr; }

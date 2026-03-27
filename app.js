@@ -25,6 +25,9 @@ const floatingCartBtn = document.getElementById('floatingCartBtn');
 const floatingCartCount = document.getElementById('floatingCartCount');
 const floatingCartTotal = document.getElementById('floatingCartTotal');
 const floatingCartGoBtn = document.getElementById('floatingCartGoBtn');
+const historyToProfileBtn = document.getElementById('historyToProfileBtn');
+const historyToMenuBtn = document.getElementById('historyToMenuBtn');
+const clientOrdersList = document.getElementById('clientOrdersList');
 const panels = Array.from(document.querySelectorAll('.wizard-panel'));
 const indicators = Array.from(document.querySelectorAll('.wizard-step'));
 
@@ -73,6 +76,7 @@ function setStep(step) {
   });
   window.scrollTo({ top: 0, behavior: 'smooth' });
   updateFloatingCart();
+  if (step === 4) renderOrdersHistory();
 }
 
 function updateFloatingCart() {
@@ -291,13 +295,16 @@ function submitOrder() {
   notesInput.value = '';
   renderCart();
   renderMenu();
-  setStep(2);
-  toastMessage(`Pedido ${order.id} guardado y listo para WhatsApp.`);
+  setStep(4);
+  toastMessage(`Pedido ${order.id} guardado. Puedes seguir su estado aquí.`);
 }
 
 profileForm.addEventListener('submit', (e) => {
   e.preventDefault();
+  const existing = getJson(storage.profile, null) || {};
   const profile = {
+    ...existing,
+    clientId: existing.clientId || crypto.randomUUID(),
     name: document.getElementById('name').value.trim(),
     complex: document.getElementById('complex').value.trim(),
     tower: document.getElementById('tower').value.trim(),
@@ -329,6 +336,8 @@ if (floatingCartGoBtn) {
   });
 }
 
+if (historyToProfileBtn) historyToProfileBtn.addEventListener('click', () => setStep(1));
+if (historyToMenuBtn) historyToMenuBtn.addEventListener('click', () => setStep(2));
 backToProfileBtn.addEventListener('click', () => setStep(1));
 backToMenuBtn.addEventListener('click', () => setStep(2));
 submitOrderBtn.addEventListener('click', submitOrder);
@@ -336,10 +345,117 @@ window.addEventListener('storage', () => {
   renderSizeTabs();
   renderMenu();
   renderCart();
+  renderOrdersHistory();
 });
 
 ensureProducts();
 const hasProfile = loadProfile();
+
+window.submitReview = (orderId) => {
+  const text = document.getElementById(`reviewText-${orderId}`).value.trim();
+  const box = document.getElementById(`ratingBox-${orderId}`);
+  const activeStar = box.querySelector('.star-btn.selected');
+  if (!activeStar) return toastMessage('Por favor selecciona las estrellas.');
+  
+  const rating = Number(activeStar.dataset.val);
+  const orders = getJson(storage.orders, []);
+  const idx = orders.findIndex(o => o.id === orderId);
+  if (idx > -1) {
+    orders[idx].rating = rating;
+    orders[idx].review = text;
+    setJson(storage.orders, orders);
+    renderOrdersHistory();
+    toastMessage('¡Gracias por tu reseña!');
+  }
+};
+
+function renderOrdersHistory() {
+  if (!clientOrdersList) return;
+  const profile = getJson(storage.profile, null);
+  if (!profile || !profile.clientId) return;
+
+  const allOrders = getJson(storage.orders, []);
+  const myOrders = allOrders.filter(o => o.customer && o.customer.clientId === profile.clientId);
+
+  if (!myOrders.length) {
+    clientOrdersList.innerHTML = '<div class="empty-state">No tienes pedidos recientes.</div>';
+    return;
+  }
+
+  clientOrdersList.innerHTML = myOrders.map(order => {
+    let trackingHTML = '';
+    
+    if (order.status !== 'entregado') {
+      const steps = ['pendiente', 'preparacion', 'encamino'];
+      const labels = ['Pendiente', 'Preparación', 'En camino'];
+      let currentIndex = steps.indexOf(order.status);
+      if (currentIndex === -1) currentIndex = 0; // fallback just in case
+      
+      trackingHTML = `
+        <div class="tracker-steps">
+          ${steps.map((step, idx) => `
+            <div class="tracker-step ${currentIndex >= idx ? 'active' : ''}">
+              <div class="tracker-dot"></div>
+              <span>${labels[idx]}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    } else {
+      trackingHTML = `
+        <div class="tracker-delivered">
+          <strong>¡Pedido Entregado!</strong>
+          ${!order.rating ? `
+          <div class="rating-box" id="ratingBox-${order.id}">
+            <p>¿Qué tal te pareció?</p>
+            <div class="stars">
+              <button type="button" class="star-btn" data-id="${order.id}" data-val="1">★</button>
+              <button type="button" class="star-btn" data-id="${order.id}" data-val="2">★</button>
+              <button type="button" class="star-btn" data-id="${order.id}" data-val="3">★</button>
+              <button type="button" class="star-btn" data-id="${order.id}" data-val="4">★</button>
+              <button type="button" class="star-btn" data-id="${order.id}" data-val="5">★</button>
+            </div>
+            <textarea id="reviewText-${order.id}" placeholder="Deja una observación..." rows="2"></textarea>
+            <button type="button" class="primary-btn mt-2" onclick="submitReview('${order.id}')">Enviar calificación</button>
+          </div>
+          ` : `
+          <div class="rating-done">
+            <p>Calificación: <span style="color:var(--warning)">${'★'.repeat(order.rating)}${'☆'.repeat(5 - order.rating)}</span></p>
+            ${order.review ? `<p class="menu-meta">"${escapeHTML(order.review)}"</p>` : ''}
+          </div>
+          `}
+        </div>
+      `;
+    }
+
+    return `
+      <div class="order-card" style="margin-bottom: 20px; box-shadow: var(--shadow);">
+        <div class="order-header" style="padding-bottom: 12px; border-bottom: 1px dashed var(--line); align-items: flex-start;">
+          <div>
+            <strong style="display:block; margin-bottom:4px; color:var(--text);">Pedido ${escapeHTML(order.id)}</strong>
+            <div class="menu-meta">${new Date(order.createdAt).toLocaleString()}</div>
+          </div>
+          <strong style="color:var(--primary); font-size:1.15rem;">${money(order.total)}</strong>
+        </div>
+        ${trackingHTML}
+      </div>
+    `;
+  }).join('');
+
+  clientOrdersList.querySelectorAll('.star-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const parent = btn.parentElement;
+      parent.querySelectorAll('.star-btn').forEach(s => s.classList.remove('selected'));
+      btn.classList.add('selected');
+      const val = Number(btn.dataset.val);
+      parent.querySelectorAll('.star-btn').forEach(s => {
+        s.style.color = Number(s.dataset.val) <= val ? 'var(--warning)' : '#d1d5db';
+      });
+    });
+  });
+}
+
 renderSizeTabs();
 renderMenu();
 renderCart();

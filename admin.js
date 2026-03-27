@@ -117,6 +117,7 @@ function renderOrders() {
         <div><strong>Items:</strong><br>${order.items.map((item) => `• ${escapeHTML(item.name)} - ${escapeHTML(item.sizeLabel || '')} ${item.removed?.length ? `(sin ${escapeHTML(item.removed.join(', '))})` : ''}`).join('<br>')}</div>
         <div><strong>Notas:</strong> ${escapeHTML(order.notes || 'Sin notas')}</div>
         <div><strong>Total:</strong> ${money(order.total)}</div>
+        ${order.rating ? `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);"><strong style="color:var(--warning)">Calificación del cliente:</strong> ${'★'.repeat(order.rating)}${'☆'.repeat(5 - order.rating)} ${order.review ? `<br><em>"${escapeHTML(order.review)}"</em>` : ''}</div>` : ''}
       </div>
       <div class="status-row">
         ${['pendiente', 'preparacion', 'encamino', 'entregado'].map((status) => `
