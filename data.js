@@ -175,7 +175,7 @@
       prices: { personal: 24000, small: 39000, medium: 52500 }
     },
     {
-      name: 'Pizza Hugolin',
+      name: 'Pizza Dangai',
       ingredients: 'Salsa, mozzarella, jamón, tocineta, salami, carne molida, cebolla, pimentón y maíz.',
       removableOptions: ['jamón', 'tocineta', 'salami', 'carne molida', 'cebolla', 'pimentón', 'maíz'],
       prices: { personal: 25000, small: 40000, medium: 53000 }
@@ -200,7 +200,7 @@
   }));
 
   window.RestaurantAppConfig = {
-    restaurantName: 'Hugolin Pizza',
+    restaurantName: 'Dangai Food',
     whatsappNumber: '573506876430',
     deliveryFee: 5000,
     adminCredentials: {

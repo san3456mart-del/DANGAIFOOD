@@ -27,6 +27,9 @@ body { position: relative; overflow-x: hidden; }
 @keyframes floaty { 0%, 100% { transform: translateY(0px) translateX(0px); } 50% { transform: translateY(-18px) translateX(12px); } }
 .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 28px clamp(16px, 4vw, 42px) 10px; }
 .topbar h1 { margin: 4px 0 0; font-size: clamp(1.8rem, 4vw, 3rem); background: linear-gradient(135deg, #ffffff, #b4c4de); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.02em; font-weight: 800; }
+.brand-lockup { display: flex; flex-direction: column; gap: 4px; }
+.brand-logo { display: flex; align-items: center; gap: 8px; font-size: clamp(1.1rem, 2vw, 1.4rem); font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; background: linear-gradient(135deg, var(--primary), #ffbf87); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 8px rgba(255,122,24,0.4)); }
+.logo-icon { filter: drop-shadow(0 2px 4px rgba(255,122,24,0.5)); font-size: 1.4rem; -webkit-text-fill-color: initial; }
 .eyebrow, .section-kicker { margin: 0; text-transform: uppercase; letter-spacing: .18em; font-size: .72rem; color: var(--secondary); font-weight: 700; }
 .admin-layout { display: grid; gap: 20px; padding: 16px clamp(16px, 4vw, 42px) 40px; }
 .card { background: var(--card); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--line); border-radius: 26px; box-shadow: var(--shadow); padding: 22px; }
