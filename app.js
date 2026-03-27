@@ -25,6 +25,7 @@ const floatingCartBtn = document.getElementById('floatingCartBtn');
 const floatingCartCount = document.getElementById('floatingCartCount');
 const floatingCartTotal = document.getElementById('floatingCartTotal');
 const floatingCartGoBtn = document.getElementById('floatingCartGoBtn');
+const goToOrdersBtn = document.getElementById('goToOrdersBtn');
 const historyToProfileBtn = document.getElementById('historyToProfileBtn');
 const historyToMenuBtn = document.getElementById('historyToMenuBtn');
 const clientOrdersList = document.getElementById('clientOrdersList');
@@ -333,6 +334,14 @@ if (floatingCartGoBtn) {
     if (!getJson(storage.profile, null)) return toastMessage('Primero guarda tus datos.');
     if (!cart.length) return toastMessage('Agrega por lo menos una pizza antes de continuar.');
     setStep(3);
+  });
+}
+
+if (goToOrdersBtn) {
+  goToOrdersBtn.addEventListener('click', () => {
+    const profile = getJson(storage.profile, null);
+    if (!profile || !profile.clientId) return toastMessage('Primero guarda tus datos para ver pedidos.');
+    setStep(4);
   });
 }
 
