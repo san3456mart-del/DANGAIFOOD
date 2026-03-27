@@ -65,6 +65,11 @@ const escapeHTML = (value) => String(value || '')
   .replace(/"/g, '&quot;')
   .replace(/'/g, '&#39;');
 
+function getDeliveryFee() {
+  const settings = getJson(storage.settings, {});
+  return settings.deliveryFee !== undefined ? Number(settings.deliveryFee) : Number(cfg.deliveryFee || 5000);
+}
+
 function toastMessage(message) {
   toast.textContent = message;
   toast.classList.add('show');
@@ -99,7 +104,7 @@ function updateFloatingCart() {
   if (currentStep === 2 && cart.length > 0) {
     floatingCartCount.textContent = `${cart.length} items`;
     const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
-    const total = subtotal + cfg.deliveryFee;
+    const total = subtotal + getDeliveryFee();
     floatingCartTotal.textContent = money(total);
     floatingCartBtn.classList.remove('hidden');
   } else {
@@ -236,7 +241,7 @@ function renderCart() {
   }
 
   const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
-  const delivery = cart.length ? cfg.deliveryFee : 0;
+  const delivery = cart.length ? getDeliveryFee() : 0;
   const total = subtotal + delivery;
   cartCount.textContent = `${cart.length} items`;
   subtotalValue.textContent = money(subtotal);
@@ -281,8 +286,8 @@ function submitOrder() {
     items: [...cart],
     notes: notesInput.value.trim(),
     subtotal,
-    deliveryFee: cfg.deliveryFee,
-    total: subtotal + cfg.deliveryFee,
+    deliveryFee: getDeliveryFee(),
+    total: subtotal + getDeliveryFee(),
     cost: totalCost,
     estimatedProfit: subtotal - totalCost,
     paymentMethod,

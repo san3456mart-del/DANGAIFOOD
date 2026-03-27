@@ -38,6 +38,7 @@ const deliveredOrdersCount = document.getElementById('deliveredOrdersCount');
 const incomeValue = document.getElementById('incomeValue');
 const profitValue = document.getElementById('profitValue');
 const pendingPaymentsList = document.getElementById('pendingPaymentsList');
+const deliveryFeeInput = document.getElementById('deliveryFeeInput');
 
 let lastKnownOrderId = localStorage.getItem(storage.lastOrderSound) || null;
 let soundArmed = false;
@@ -69,6 +70,9 @@ function renderSettings() {
   if (settings.brebImage && brebImagePreview) {
     brebImagePreview.src = settings.brebImage;
     brebImagePreview.style.display = 'block';
+  }
+  if (deliveryFeeInput) {
+    deliveryFeeInput.value = settings.deliveryFee !== undefined ? settings.deliveryFee : cfg.deliveryFee;
   }
 }
 
@@ -420,8 +424,11 @@ if (settingsForm) {
       if (brebImageInput.files.length > 0) {
         settings.brebImage = await toBase64(brebImageInput.files[0]);
       }
+      if (deliveryFeeInput && deliveryFeeInput.value) {
+        settings.deliveryFee = Number(deliveryFeeInput.value);
+      }
       setJson(storage.settings, settings);
-      showToast('Imágenes guardadas correctamente.');
+      showToast('Configuración guardada correctamente.');
       renderSettings();
       qrImageInput.value = '';
       brebImageInput.value = '';
