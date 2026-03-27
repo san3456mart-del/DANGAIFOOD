@@ -41,6 +41,7 @@ const pendingPaymentsList = document.getElementById('pendingPaymentsList');
 const deliveryFeeInput = document.getElementById('deliveryFeeInput');
 const customersTableBody = document.getElementById('customersTableBody');
 const customersCount = document.getElementById('customersCount');
+const ordersSearchInput = document.getElementById('ordersSearchInput');
 
 let lastKnownOrderId = localStorage.getItem(storage.lastOrderSound) || null;
 let soundArmed = false;
@@ -139,9 +140,27 @@ function renderOrders() {
   }
   maybePlaySound(newestId);
 
+  // Filter by search query
+  const query = (ordersSearchInput?.value || '').toLowerCase().trim();
+  const filtered = query
+    ? orders.filter(o =>
+        (o.id || '').toLowerCase().includes(query) ||
+        (o.customer?.name || '').toLowerCase().includes(query) ||
+        (o.customer?.apartment || '').toLowerCase().includes(query) ||
+        (o.customer?.tower || '').toLowerCase().includes(query) ||
+        (o.customer?.complex || '').toLowerCase().includes(query) ||
+        (o.status || '').toLowerCase().includes(query)
+      )
+    : orders;
+
+  if (!filtered.length && query) {
+    ordersList.innerHTML = `<div class="empty-state">❌ No se encontró ningún pedido con "${escapeHTML(query)}".</div>`;
+    return;
+  }
+
   // Priority: preparacion → encamino → pendiente → entregado; within each group: oldest first
   const statusPriority = { preparacion: 0, encamino: 1, pendiente: 2, entregado: 3 };
-  const orderedAsc = [...orders]
+  const orderedAsc = [...filtered]
     .reverse() // oldest first within each group
     .sort((a, b) => (statusPriority[a.status] ?? 2) - (statusPriority[b.status] ?? 2));
 
@@ -487,6 +506,10 @@ document.querySelectorAll('.tab-btn').forEach((btn) => {
     document.getElementById(btn.dataset.tab).classList.remove('hidden');
   });
 });
+
+if (ordersSearchInput) {
+  ordersSearchInput.addEventListener('input', () => renderOrders());
+}
 
 window.addEventListener('storage', renderAll);
 setInterval(() => {
