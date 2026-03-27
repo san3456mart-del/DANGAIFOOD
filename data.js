@@ -202,7 +202,7 @@
   window.RestaurantAppConfig = {
     restaurantName: 'Dangai Food',
     whatsappNumber: '573506876430',
-    deliveryFee: 5000,
+    deliveryFee: 0,
     adminCredentials: {
       username: 'admin',
       password: '123456'

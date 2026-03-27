@@ -67,7 +67,7 @@ const escapeHTML = (value) => String(value || '')
 
 function getDeliveryFee() {
   const settings = getJson(storage.settings, {});
-  return settings.deliveryFee !== undefined ? Number(settings.deliveryFee) : Number(cfg.deliveryFee || 5000);
+  return settings.deliveryFee !== undefined ? Number(settings.deliveryFee) : Number(cfg.deliveryFee || 0);
 }
 
 function toastMessage(message) {
