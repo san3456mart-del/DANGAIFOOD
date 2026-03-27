@@ -63,9 +63,10 @@
       </div>
 
       <div class="tabs">
-        <button class="tab-btn active" data-tab="ordersTab">Pedidos</button>
-        <button class="tab-btn" data-tab="salesTab">Contabilidad</button>
-        <button class="tab-btn" data-tab="inventoryTab">Menú e inventario</button>
+        <button class="tab-btn active" data-tab="ordersTab">Pedidos activos</button>
+        <button class="tab-btn" data-tab="salesTab">Ventas finalizadas</button>
+        <button class="tab-btn" data-tab="inventoryTab">Menú local</button>
+        <button class="tab-btn" data-tab="tabSettings">Pagos (QR / Bre-B)</button>
       </div>
 
       <section class="tab-panel" id="ordersTab">
@@ -167,6 +168,33 @@
         </div>
       </section>
     </section>
+
+    <!-- SETTINGS TAB -->
+    <section id="tabSettings" class="tab-panel hidden card">
+      <div class="section-title-row">
+        <h2>Configuración de Métodos de Pago</h2>
+      </div>
+      <p class="helper-text">Sube las imágenes que se le mostrarán al cliente cuando elija pago por QR o Llave Bre-B.</p>
+      
+      <form id="settingsForm" class="grid-form">
+        <label>
+          Imagen Código QR (Nequi/Bancolombia)
+          <input type="file" id="qrImageInput" accept="image/*" />
+          <img id="qrImagePreview" style="max-width: 100%; max-height: 200px; border-radius: 12px; margin-top: 8px; display: none; object-fit: contain;" />
+        </label>
+
+        <label>
+          Imagen Llave Bre-B
+          <input type="file" id="brebImageInput" accept="image/*" />
+          <img id="brebImagePreview" style="max-width: 100%; max-height: 200px; border-radius: 12px; margin-top: 8px; display: none; object-fit: contain;" />
+        </label>
+        
+        <div class="form-actions full-width wizard-actions-row" style="margin-top: 16px;">
+          <button type="submit" class="primary-btn">Guardar imágenes y configuración</button>
+        </div>
+      </form>
+    </section>
+
   </main>
 
   <div id="toast" class="toast"></div>

@@ -38,4 +38,5 @@
   window.FirebaseDB.syncKey(keys.products);
   window.FirebaseDB.syncKey(keys.orders);
   if (keys.users) window.FirebaseDB.syncKey(keys.users);
+  if (keys.settings) window.FirebaseDB.syncKey(keys.settings);
 })();

@@ -34,6 +34,12 @@ const goToOrdersBtn = document.getElementById('goToOrdersBtn');
 const historyBackBtn = document.getElementById('historyBackBtn');
 const historyToMenuBtn = document.getElementById('historyToMenuBtn');
 const clientOrdersList = document.getElementById('clientOrdersList');
+const paymentTabs = document.querySelectorAll('.payment-tab');
+const paymentDigitalSection = document.getElementById('paymentDigitalSection');
+const paymentImageDisplay = document.getElementById('paymentImageDisplay');
+const paymentHelperText = document.getElementById('paymentHelperText');
+const clientReceiptInput = document.getElementById('clientReceiptInput');
+
 const panels = Array.from(document.querySelectorAll('.wizard-panel'));
 const indicators = Array.from(document.querySelectorAll('.wizard-step'));
 
@@ -41,6 +47,8 @@ let cart = [];
 let currentStep = 1;
 let previousStep = 2;
 let activeSize = 'personal';
+let paymentMethod = 'efectivo';
+let paymentReceiptBase64 = null;
 
 const money = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(n || 0));
 const getJson = (key, fallback) => JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
@@ -243,6 +251,7 @@ function buildWhatsappMessage(order) {
     `Pedido: ${order.id}`,
     `Cliente: ${order.customer.name}`,
     `Ubicación: ${order.customer.complex}, ${order.customer.tower}, apto ${order.customer.apartment}`,
+    `Método de Pago: ${order.paymentMethod === 'efectivo' ? '💵 Efectivo' : (order.paymentMethod === 'qr' ? '📱 App/QR (Comprobante adjunto en el Admin Panel)' : '🔑 Bre-B (Comprobante adjunto en el Admin Panel)')}`,
     'Productos:',
     ...order.items.map((item, index) => `${index + 1}. ${item.name} - ${item.sizeLabel} - ${item.removed.length ? `Sin ${item.removed.join(', ')}` : 'Completa'} - ${money(item.price)}`),
     `Notas: ${order.notes || 'Sin notas'}`,
@@ -254,6 +263,9 @@ function submitOrder() {
   const profile = getJson(storage.profile, null);
   if (!profile) return toastMessage('Primero guarda tus datos.');
   if (!cart.length) return toastMessage('Agrega por lo menos una pizza.');
+  if (paymentMethod !== 'efectivo' && !paymentReceiptBase64) {
+    return toastMessage('Debes subir el comprobante de pago para continuar.');
+  }
 
   const products = getProducts();
   const stockCheck = cart.every((line) => Number(products.find((p) => p.id === line.productId)?.stock?.[line.sizeKey] || 0) > 0);
@@ -272,7 +284,9 @@ function submitOrder() {
     deliveryFee: cfg.deliveryFee,
     total: subtotal + cfg.deliveryFee,
     cost: totalCost,
-    estimatedProfit: subtotal - totalCost
+    estimatedProfit: subtotal - totalCost,
+    paymentMethod,
+    receiptBase64: paymentReceiptBase64
   };
 
   const orders = getJson(storage.orders, []);
@@ -292,6 +306,11 @@ function submitOrder() {
   window.open(url, '_blank');
   cart = [];
   notesInput.value = '';
+  if (clientReceiptInput) clientReceiptInput.value = '';
+  paymentReceiptBase64 = null;
+  paymentMethod = 'efectivo';
+  if (typeof updatePaymentUI === 'function') updatePaymentUI();
+  
   renderCart();
   renderMenu();
   previousStep = 2; /* always go back to menu after a successful order if they click volver */
@@ -405,8 +424,75 @@ window.addEventListener('storage', () => {
   renderOrdersHistory();
 });
 
+function toBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.readAsDataURL(file);
+    r.onload = () => resolve(r.result);
+    r.onerror = (e) => reject(e);
+  });
+}
+
+function updatePaymentUI() {
+  if (!paymentTabs || !paymentDigitalSection) return;
+  paymentTabs.forEach(btn => {
+    const isActive = btn.dataset.method === paymentMethod;
+    btn.classList.toggle('active', isActive);
+    if (isActive) {
+      btn.style.background = 'var(--primary)';
+      btn.style.color = '#fff';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--text)';
+    }
+  });
+
+  if (paymentMethod === 'efectivo') {
+    paymentDigitalSection.classList.add('hidden');
+    if (clientReceiptInput) clientReceiptInput.value = '';
+    paymentReceiptBase64 = null;
+  } else {
+    paymentDigitalSection.classList.remove('hidden');
+    const settings = getJson(storage.settings, {});
+    const totalVal = document.getElementById('totalValue')?.textContent || '';
+    if (paymentMethod === 'qr') {
+      paymentImageDisplay.src = settings.qrImage || '';
+      paymentImageDisplay.style.display = settings.qrImage ? 'block' : 'none';
+      paymentHelperText.textContent = 'Envía el comprobante escaneando este código bancario.';
+    } else if (paymentMethod === 'breb') {
+      paymentImageDisplay.src = settings.brebImage || '';
+      paymentImageDisplay.style.display = settings.brebImage ? 'block' : 'none';
+      paymentHelperText.textContent = 'Abre tu app bancaria y paga ingresando a la Llave Bre-B mostrada arriba.';
+    }
+  }
+}
+
+if (paymentTabs) {
+  paymentTabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      paymentMethod = btn.dataset.method;
+      updatePaymentUI();
+    });
+  });
+}
+
+if (clientReceiptInput) {
+  clientReceiptInput.addEventListener('change', async (e) => {
+    if (e.target.files.length > 0) {
+      try {
+        paymentReceiptBase64 = await toBase64(e.target.files[0]);
+      } catch (err) {
+        toastMessage('Error leyendo comprobante.');
+      }
+    } else {
+      paymentReceiptBase64 = null;
+    }
+  });
+}
+
 ensureProducts();
 const hasProfile = loadProfile();
+updatePaymentUI();
 
 window.submitReview = (orderId) => {
   const text = document.getElementById(`reviewText-${orderId}`).value.trim();

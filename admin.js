@@ -28,6 +28,11 @@ const inventoryCount = document.getElementById('inventoryCount');
 const productForm = document.getElementById('productForm');
 const newProductBtn = document.getElementById('newProductBtn');
 const cancelEditBtn = document.getElementById('cancelEditBtn');
+const settingsForm = document.getElementById('settingsForm');
+const qrImageInput = document.getElementById('qrImageInput');
+const qrImagePreview = document.getElementById('qrImagePreview');
+const brebImageInput = document.getElementById('brebImageInput');
+const brebImagePreview = document.getElementById('brebImagePreview');
 const activeOrdersCount = document.getElementById('activeOrdersCount');
 const deliveredOrdersCount = document.getElementById('deliveredOrdersCount');
 const incomeValue = document.getElementById('incomeValue');
@@ -53,6 +58,27 @@ function getProducts() {
 }
 function saveProducts(products) { setJson(storage.products, products); }
 function saveOrders(orders) { setJson(storage.orders, orders); }
+
+function renderSettings() {
+  const settings = getJson(storage.settings, {});
+  if (settings.qrImage && qrImagePreview) {
+    qrImagePreview.src = settings.qrImage;
+    qrImagePreview.style.display = 'block';
+  }
+  if (settings.brebImage && brebImagePreview) {
+    brebImagePreview.src = settings.brebImage;
+    brebImagePreview.style.display = 'block';
+  }
+}
+
+function toBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.readAsDataURL(file);
+    r.onload = () => resolve(r.result);
+    r.onerror = (e) => reject(e);
+  });
+}
 
 function formatDate(date) {
   return new Date(date).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
@@ -117,6 +143,8 @@ function renderOrders() {
         <div><strong>Items:</strong><br>${order.items.map((item) => `• ${escapeHTML(item.name)} - ${escapeHTML(item.sizeLabel || '')} ${item.removed?.length ? `(sin ${escapeHTML(item.removed.join(', '))})` : ''}`).join('<br>')}</div>
         <div><strong>Notas:</strong> ${escapeHTML(order.notes || 'Sin notas')}</div>
         <div><strong>Total:</strong> ${money(order.total)}</div>
+        <div style="margin-top:4px;"><strong>Pago:</strong> ${order.paymentMethod === 'efectivo' ? '💵 Efectivo' : (order.paymentMethod === 'qr' ? '📱 QR' : (order.paymentMethod === 'breb' ? '🔑 Bre-B' : '💵 Efectivo'))}</div>
+        ${order.receiptBase64 ? `<div style="margin-top:6px;"><a href="javascript:void(0)" onclick="const w=window.open('','_blank');w.document.write('<img src=\\'${order.receiptBase64}\\' style=\\'max-width:100%;\\'/>');" style="color:var(--primary); text-decoration:underline; font-weight:bold; font-size:0.9rem;">🖼️ Ver comprobante de pago</a></div>` : ''}
         ${order.rating ? `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);"><strong style="color:var(--warning)">Calificación del cliente:</strong> ${'★'.repeat(order.rating)}${'☆'.repeat(5 - order.rating)} ${order.review ? `<br><em>"${escapeHTML(order.review)}"</em>` : ''}</div>` : ''}
       </div>
       <div class="status-row">
@@ -251,6 +279,7 @@ function renderAll() {
   renderSales();
   renderInventory();
   renderDashboard();
+  renderSettings();
 }
 
 function checkSession() {
@@ -324,6 +353,34 @@ productForm.addEventListener('submit', (e) => {
 
 newProductBtn.addEventListener('click', resetProductForm);
 cancelEditBtn.addEventListener('click', resetProductForm);
+
+if (settingsForm) {
+  settingsForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const saveBtn = settingsForm.querySelector('button[type="submit"]');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Guardando...';
+    try {
+      const settings = getJson(storage.settings, {});
+      if (qrImageInput.files.length > 0) {
+        settings.qrImage = await toBase64(qrImageInput.files[0]);
+      }
+      if (brebImageInput.files.length > 0) {
+        settings.brebImage = await toBase64(brebImageInput.files[0]);
+      }
+      setJson(storage.settings, settings);
+      showToast('Imágenes guardadas correctamente.');
+      renderSettings();
+      qrImageInput.value = '';
+      brebImageInput.value = '';
+    } catch (err) {
+      showToast('Error subiendo imagen.');
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Guardar imágenes y configuración';
+    }
+  });
+}
 
 document.querySelectorAll('.tab-btn').forEach((btn) => {
   btn.addEventListener('click', () => {

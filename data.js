@@ -214,6 +214,7 @@
       products: 'restaurant_products_v2',
       orders: 'restaurant_orders_v2',
       users: 'restaurant_users_v2',
+      settings: 'restaurant_settings_v2',
       adminSession: 'restaurant_admin_session_v2',
       lastOrderSound: 'restaurant_last_order_sound_v2'
     },
