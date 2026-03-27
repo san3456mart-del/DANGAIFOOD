@@ -39,6 +39,8 @@ const incomeValue = document.getElementById('incomeValue');
 const profitValue = document.getElementById('profitValue');
 const pendingPaymentsList = document.getElementById('pendingPaymentsList');
 const deliveryFeeInput = document.getElementById('deliveryFeeInput');
+const customersTableBody = document.getElementById('customersTableBody');
+const customersCount = document.getElementById('customersCount');
 
 let lastKnownOrderId = localStorage.getItem(storage.lastOrderSound) || null;
 let soundArmed = false;
@@ -321,6 +323,32 @@ function renderPendingPayments() {
   `).join('');
 }
 
+function renderCustomers() {
+  if (!customersTableBody) return;
+  const users = getJson(storage.users, []);
+  if (customersCount) customersCount.textContent = `${users.length} clientes`;
+  
+  if (!users.length) {
+    customersTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Aún no hay clientes registrados.</td></tr>';
+    return;
+  }
+
+  customersTableBody.innerHTML = users.map(user => `
+    <tr>
+      <td><strong>${escapeHTML(user.name)}</strong></td>
+      <td>${escapeHTML(user.username)}</td>
+      <td>
+        ${user.phone 
+          ? `<a href="https://wa.me/57${user.phone.replace(/\D/g, '')}" target="_blank" style="color:var(--primary); font-weight:bold; text-decoration:underline;">💬 ${escapeHTML(user.phone)}</a>` 
+          : '<span style="color:var(--muted)">Sin teléfono</span>'}
+      </td>
+      <td>${escapeHTML(user.complex)}</td>
+      <td>${escapeHTML(user.tower)}</td>
+      <td>${escapeHTML(user.apartment)}</td>
+    </tr>
+  `).join('');
+}
+
 function renderAll() {
   renderOrders();
   renderSales();
@@ -328,6 +356,7 @@ function renderAll() {
   renderDashboard();
   renderSettings();
   renderPendingPayments();
+  renderCustomers();
 }
 
 function checkSession() {

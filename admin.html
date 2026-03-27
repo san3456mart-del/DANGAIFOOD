@@ -66,6 +66,7 @@
         <button class="tab-btn active" data-tab="ordersTab">Pedidos activos</button>
         <button class="tab-btn" data-tab="salesTab">Ventas finalizadas</button>
         <button class="tab-btn" data-tab="inventoryTab">Menú local</button>
+        <button class="tab-btn" data-tab="tabCustomers">Clientes</button>
         <button class="tab-btn" data-tab="tabSettings">Pagos (QR / Bre-B)</button>
       </div>
 
@@ -204,6 +205,33 @@
         </div>
         <p class="helper-text">Revisa los pagos digitales pendientes por validar.</p>
         <div id="pendingPaymentsList" class="order-list"></div>
+      </section>
+
+      <!-- CUSTOMERS TAB -->
+      <section id="tabCustomers" class="tab-panel hidden card">
+        <div class="section-title-row">
+          <div>
+            <p class="section-kicker">Directorio</p>
+            <h2>Clientes Registrados</h2>
+          </div>
+          <span class="pill" id="customersCount">0 clientes</span>
+        </div>
+        <p class="helper-text">Listado de todos los clientes que han creado una cuenta en tu plataforma.</p>
+        <div class="table-wrap" style="margin-top: 16px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Usuario</th>
+                <th>WhatsApp</th>
+                <th>Conjunto/Barrio</th>
+                <th>Torre</th>
+                <th>Apto</th>
+              </tr>
+            </thead>
+            <tbody id="customersTableBody"></tbody>
+          </table>
+        </div>
       </section>
     </section>
 

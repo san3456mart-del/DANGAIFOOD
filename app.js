@@ -311,8 +311,6 @@ async function submitOrder() {
     });
     await setJson(storage.products, updatedProducts);
 
-    const url = `https://wa.me/${cfg.whatsappNumber}?text=${encodeURIComponent(buildWhatsappMessage(order))}`;
-    window.open(url, '_blank');
     cart = [];
     notesInput.value = '';
     if (clientReceiptInput) clientReceiptInput.value = '';
@@ -382,6 +380,7 @@ profileForm.addEventListener('submit', (e) => {
     username: regUser,
     password: regPass,
     name: document.getElementById('name').value.trim(),
+    phone: document.getElementById('regPhone')?.value.trim() || '',
     complex: document.getElementById('complex').value.trim(),
     tower: document.getElementById('tower').value.trim(),
     apartment: document.getElementById('apartment').value.trim()
@@ -540,6 +539,14 @@ function renderOrdersHistory() {
     return;
   }
 
+  window.openWhatsappForOrder = (orderId) => {
+    const orders = getJson(storage.orders, []);
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+    const url = `https://wa.me/${cfg.whatsappNumber}?text=${encodeURIComponent(buildWhatsappMessage(order))}`;
+    window.open(url, '_blank');
+  };
+
   clientOrdersList.innerHTML = myOrders.map(order => {
     let trackingHTML = '';
     
@@ -547,7 +554,7 @@ function renderOrdersHistory() {
       const steps = ['pendiente', 'preparacion', 'encamino'];
       const labels = ['Pendiente', 'Preparación', 'En camino'];
       let currentIndex = steps.indexOf(order.status);
-      if (currentIndex === -1) currentIndex = 0; // fallback just in case
+      if (currentIndex === -1) currentIndex = 0;
       
       trackingHTML = `
         <div class="tracker-steps">
@@ -557,6 +564,9 @@ function renderOrdersHistory() {
               <span>${labels[idx]}</span>
             </div>
           `).join('')}
+        </div>
+        <div style="margin-top: 16px; display:flex; justify-content:center;">
+          <button class="primary-btn" style="background:#25D366; border-color:#25D366;" onclick="window.openWhatsappForOrder('${order.id}')">Escríbenos por WhatsApp</button>
         </div>
       `;
     } else {
