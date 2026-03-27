@@ -139,12 +139,26 @@ function renderOrders() {
   }
   maybePlaySound(newestId);
 
-  ordersList.innerHTML = orders.map((order) => `
-    <article class="order-card">
-      <div class="order-header">
-        <div>
-          <h3>${escapeHTML(order.id)}</h3>
-          <div class="menu-meta">${formatDate(order.createdAt)} · ${escapeHTML(order.customer.name)}</div>
+  // Oldest first (#1 at top), alternating orange / white cards
+  const orderedAsc = [...orders].reverse();
+
+  ordersList.innerHTML = orderedAsc.map((order, idx) => {
+    const isOrange = idx % 2 === 0;
+    const cardStyle = isOrange
+      ? 'border:2.5px solid var(--primary);background:#fff8f5;'
+      : 'border:2.5px solid #e5e7eb;background:#ffffff;';
+    const rowBg = isOrange ? 'background:rgba(255,90,0,0.04);' : 'background:#f9fafb;';
+    const numBg = isOrange ? 'var(--primary)' : '#6b7280';
+    const numBadge = `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:${numBg};color:#fff;font-weight:800;font-size:0.8rem;margin-right:8px;flex-shrink:0;">${idx + 1}</span>`;
+    return `
+    <article class="order-card" style="${cardStyle}border-radius:16px;margin-bottom:16px;overflow:hidden;">
+      <div class="order-header" style="border-bottom:1px dashed ${isOrange ? 'var(--primary)' : '#e5e7eb'};">
+        <div style="display:flex;align-items:center;">
+          ${numBadge}
+          <div>
+            <h3 style="margin:0;">${escapeHTML(order.id)}</h3>
+            <div class="menu-meta">${formatDate(order.createdAt)} · ${escapeHTML(order.customer.name)}</div>
+          </div>
         </div>
         ${badge(order.status)}
       </div>
@@ -153,24 +167,24 @@ function renderOrders() {
         <div><strong>Items:</strong><br>${order.items.map((item) => `• ${escapeHTML(item.name)} - ${escapeHTML(item.sizeLabel || '')} ${item.removed?.length ? `(sin ${escapeHTML(item.removed.join(', '))})` : ''}`).join('<br>')}</div>
         <div><strong>Notas:</strong> ${escapeHTML(order.notes || 'Sin notas')}</div>
         <div><strong>Total:</strong> ${money(order.total)}</div>
-        <div style="margin-top:4px; display: flex; align-items: center; gap: 8px;"><strong>Pago:</strong> ${order.paymentMethod === 'efectivo' ? '💵 Efectivo' : (order.paymentMethod === 'qr' ? '📱 QR' : (order.paymentMethod === 'breb' ? '🔑 Bre-B' : '💵 Efectivo'))}
-          ${order.paymentMethod && order.paymentMethod !== 'efectivo' ? 
-            (order.paymentConfirmed 
-              ? `<span class="pill success" style="font-size:0.75rem; padding: 2px 6px;">✅ Confirmado</span>`
-              : `<span class="pill warning" style="font-size:0.75rem; padding: 2px 6px;">⏳ Pendiente</span><button class="mini-btn success" onclick="confirmPayment('${order.id}')">Validar Pago</button>`)
+        <div style="margin-top:4px;display:flex;align-items:center;gap:8px;"><strong>Pago:</strong> ${order.paymentMethod === 'efectivo' ? '💵 Efectivo' : (order.paymentMethod === 'qr' ? '📱 QR' : (order.paymentMethod === 'breb' ? '🔑 Bre-B' : '💵 Efectivo'))}
+          ${order.paymentMethod && order.paymentMethod !== 'efectivo' ?
+            (order.paymentConfirmed
+              ? `<span class="pill success" style="font-size:0.75rem;padding:2px 6px;">✅ Confirmado</span>`
+              : `<span class="pill warning" style="font-size:0.75rem;padding:2px 6px;">⏳ Pendiente</span><button class="mini-btn success" onclick="confirmPayment('${order.id}')">Validar Pago</button>`)
             : ''}
         </div>
-        ${order.receiptBase64 ? `<div style="margin-top:6px;"><a href="javascript:void(0)" onclick="const w=window.open('','_blank');w.document.write('<img src=\\'${order.receiptBase64}\\' style=\\'max-width:100%;\\'/>');" style="color:var(--primary); text-decoration:underline; font-weight:bold; font-size:0.9rem;">🖼️ Ver comprobante de pago</a></div>` : ''}
-        ${order.rating ? `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);"><strong style="color:var(--warning)">Calificación del cliente:</strong> ${'★'.repeat(order.rating)}${'☆'.repeat(5 - order.rating)} ${order.review ? `<br><em>"${escapeHTML(order.review)}"</em>` : ''}</div>` : ''}
+        ${order.receiptBase64 ? `<div style="margin-top:6px;"><a href="javascript:void(0)" onclick="const w=window.open('','_blank');w.document.write('<img src=\\'${order.receiptBase64}\\' style=\\'max-width:100%;\\'/>');" style="color:var(--primary);text-decoration:underline;font-weight:bold;font-size:0.9rem;">🖼️ Ver comprobante de pago</a></div>` : ''}
+        ${order.rating ? `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);"><strong style="color:var(--warning)">Calificación del cliente:</strong> ${'★'.repeat(order.rating)}${'☆'.repeat(5 - order.rating)} ${order.review ? `<br><em>"${escapeHTML(order.review)}"</em>` : ''}</div>` : ''}
       </div>
-      <div class="status-row">
+      <div class="status-row" style="${rowBg}">
         ${['pendiente', 'preparacion', 'encamino', 'entregado'].map((status) => `
           <button class="status-btn ${order.status === status ? 'active' : ''}" data-status="${status}" data-order-id="${order.id}">${status === 'preparacion' ? 'Preparación' : status === 'encamino' ? 'En camino' : status.charAt(0).toUpperCase() + status.slice(1)}</button>
         `).join('')}
         <button class="mini-btn danger" data-delete-id="${order.id}">Eliminar</button>
       </div>
     </article>
-  `).join('');
+  `;}).join('');
 
   ordersList.querySelectorAll('[data-status]').forEach((btn) => btn.addEventListener('click', () => setStatus(btn.dataset.orderId, btn.dataset.status)));
   ordersList.querySelectorAll('[data-delete-id]').forEach((btn) => btn.addEventListener('click', () => deleteOrder(btn.dataset.deleteId)));
