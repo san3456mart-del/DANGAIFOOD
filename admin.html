@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin | Hugolin Pizza</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="admin-body">
+  <div class="video-shell">
+    <video class="bg-video" autoplay muted loop playsinline>
+      <source src="public/kitchen-bg.mp4" type="video/mp4" />
+    </video>
+    <div class="video-overlay admin-overlay"></div>
+  </div>
+
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Gestión del negocio</p>
+      <h1>Panel administrador</h1>
+    </div>
+    <div class="topbar-actions">
+      <a class="ghost-btn" href="index.html">Ir a cliente</a>
+      <button id="logoutBtn" class="ghost-btn hidden">Salir</button>
+    </div>
+  </header>
+
+  <main class="admin-layout">
+    <section class="card login-card" id="loginSection">
+      <div class="section-title-row">
+        <div>
+          <p class="section-kicker">Acceso</p>
+          <h2>Iniciar sesión</h2>
+        </div>
+        <span class="pill">Seguro</span>
+      </div>
+      <form id="loginForm" class="grid-form narrow-form">
+        <label>
+          Usuario
+          <input type="text" id="adminUser" placeholder="admin" required />
+        </label>
+        <label>
+          Contraseña
+          <input type="password" id="adminPassword" placeholder="••••••" required />
+        </label>
+        <button type="submit" class="primary-btn">Entrar</button>
+      </form>
+      <p class="helper-text">Credenciales iniciales: admin / 123456. Puedes cambiarlas en <strong>data.js</strong>.</p>
+    </section>
+
+    <section class="admin-panel hidden" id="adminPanel">
+      <div class="stats-grid">
+        <article class="card stat-card"><span>Pedidos activos</span><strong id="activeOrdersCount">0</strong></article>
+        <article class="card stat-card"><span>Ventas entregadas</span><strong id="deliveredOrdersCount">0</strong></article>
+        <article class="card stat-card"><span>Ingresos</span><strong id="incomeValue">$0</strong></article>
+        <article class="card stat-card"><span>Ganancia estimada</span><strong id="profitValue">$0</strong></article>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="ordersTab">Pedidos</button>
+        <button class="tab-btn" data-tab="salesTab">Contabilidad</button>
+        <button class="tab-btn" data-tab="inventoryTab">Menú e inventario</button>
+      </div>
+
+      <section class="tab-panel" id="ordersTab">
+        <div class="section-title-row">
+          <div>
+            <p class="section-kicker">Operación</p>
+            <h2>Pedidos en tiempo real</h2>
+          </div>
+          <span class="pill accent">Con sonido al llegar</span>
+        </div>
+        <div id="ordersList" class="order-list"></div>
+      </section>
+
+      <section class="tab-panel hidden" id="salesTab">
+        <div class="section-title-row">
+          <div>
+            <p class="section-kicker">Cierre</p>
+            <h2>Contabilidad de ventas entregadas</h2>
+          </div>
+          <span class="pill success">Solo entregados</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Pedido</th>
+                <th>Cliente</th>
+                <th>Fecha</th>
+                <th>Total</th>
+                <th>Costo</th>
+                <th>Ganancia</th>
+              </tr>
+            </thead>
+            <tbody id="salesTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="tab-panel hidden" id="inventoryTab">
+        <div class="inventory-grid inventory-grid-wide">
+          <article class="card">
+            <div class="section-title-row">
+              <div>
+                <p class="section-kicker">Editor</p>
+                <h2>Crear o modificar sabor</h2>
+              </div>
+              <button type="button" id="newProductBtn" class="ghost-btn">Nuevo sabor</button>
+            </div>
+            <form id="productForm" class="grid-form">
+              <input type="hidden" id="productId" />
+              <label class="full-width">Nombre del producto
+                <input id="productName" required />
+              </label>
+              <label class="full-width">Ingredientes
+                <textarea id="productIngredients" rows="3" required placeholder="Salsa, mozzarella, jamón..."></textarea>
+              </label>
+              <label class="full-width">Ingredientes que el cliente puede quitar (separados por coma)
+                <input id="productOptions" placeholder="jamón, piña, maíz" />
+              </label>
+
+              <div class="size-edit-grid full-width">
+                <div class="size-edit-card">
+                  <h3>Personal (27 cm)</h3>
+                  <label>Precio<input id="pricePersonal" type="number" min="0" step="100" required /></label>
+                  <label>Costo<input id="costPersonal" type="number" min="0" step="100" required /></label>
+                  <label>Stock<input id="stockPersonal" type="number" min="0" step="1" required /></label>
+                </div>
+                <div class="size-edit-card">
+                  <h3>Small (35 cm)</h3>
+                  <label>Precio<input id="priceSmall" type="number" min="0" step="100" required /></label>
+                  <label>Costo<input id="costSmall" type="number" min="0" step="100" required /></label>
+                  <label>Stock<input id="stockSmall" type="number" min="0" step="1" required /></label>
+                </div>
+                <div class="size-edit-card">
+                  <h3>Medium (40 cm)</h3>
+                  <label>Precio<input id="priceMedium" type="number" min="0" step="100" required /></label>
+                  <label>Costo<input id="costMedium" type="number" min="0" step="100" required /></label>
+                  <label>Stock<input id="stockMedium" type="number" min="0" step="1" required /></label>
+                </div>
+              </div>
+
+              <div class="wizard-actions-row full-width">
+                <button class="primary-btn" type="submit" id="saveProductBtn">Guardar sabor</button>
+                <button class="ghost-btn" type="button" id="cancelEditBtn">Limpiar formulario</button>
+              </div>
+            </form>
+          </article>
+
+          <article class="card">
+            <div class="section-title-row">
+              <div>
+                <p class="section-kicker">Control</p>
+                <h2>Listado del menú e inventario</h2>
+              </div>
+              <span class="pill" id="inventoryCount">0 sabores</span>
+            </div>
+            <div id="inventoryList" class="inventory-list"></div>
+          </article>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+  <script src="data.js"></script>
+  <script src="firebase-init.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

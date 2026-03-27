@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hugolin Pizza | Pedidos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="video-shell">
+    <video class="bg-video" autoplay muted loop playsinline>
+      <source src="public/kitchen-bg.mp4" type="video/mp4" />
+    </video>
+    <div class="video-overlay"></div>
+    <div class="glow glow-1"></div>
+    <div class="glow glow-2"></div>
+  </div>
+
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Hugolin Pizza</p>
+      <h1>Haz tu pedido paso a paso</h1>
+    </div>
+    <div class="topbar-actions">
+      <button id="editProfileBtn" class="ghost-btn">Editar datos</button>
+      <a class="ghost-btn" href="admin.html">Admin</a>
+    </div>
+  </header>
+
+  <main class="wizard-shell">
+    <section class="card wizard-card">
+      <div class="wizard-progress">
+        <div class="wizard-step active" data-step-indicator="1">
+          <span>1</span>
+          <strong>Registro</strong>
+        </div>
+        <div class="wizard-line"></div>
+        <div class="wizard-step" data-step-indicator="2">
+          <span>2</span>
+          <strong>Menú</strong>
+        </div>
+        <div class="wizard-line"></div>
+        <div class="wizard-step" data-step-indicator="3">
+          <span>3</span>
+          <strong>Confirmación</strong>
+        </div>
+      </div>
+
+      <section class="wizard-panel active" data-step="1" id="profileCard">
+        <div class="section-title-row">
+          <div>
+            <p class="section-kicker">Paso 1</p>
+            <h2>Registro del cliente</h2>
+          </div>
+          <span class="pill" id="profileStatus">Pendiente</span>
+        </div>
+        <p class="helper-text">Primero guarda tus datos para continuar al menú.</p>
+        <form id="profileForm" class="grid-form narrow-form">
+          <label>
+            Nombre completo
+            <input type="text" id="name" required placeholder="Ej. Jeferson" />
+          </label>
+          <label>
+            Conjunto
+            <input type="text" id="complex" required placeholder="Ej. Mirador del Lago" />
+          </label>
+          <label>
+            Torre
+            <input type="text" id="tower" required placeholder="Ej. Torre 3" />
+          </label>
+          <label>
+            Apartamento
+            <input type="text" id="apartment" required placeholder="Ej. 504" />
+          </label>
+          <div class="form-actions full-width wizard-actions-row">
+            <button type="submit" class="primary-btn">Guardar y continuar</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="wizard-panel" data-step="2">
+        <div class="section-title-row">
+          <div>
+            <p class="section-kicker">Paso 2</p>
+            <h2>Menú de pizzas por tamaño</h2>
+          </div>
+          <span class="pill accent">Marca ingredientes que no quieras</span>
+        </div>
+        <p class="helper-text">El menú quedó separado en tres secciones: <strong>personales</strong>, <strong>small</strong> y <strong>medium</strong>.</p>
+
+        <div id="sizeTabs" class="size-tabs"></div>
+        <div class="menu-section-head">
+          <div>
+            <h3 id="activeSizeTitle">Pizzas personales</h3>
+            <p id="activeSizeSubtitle" class="menu-meta">27 cm</p>
+          </div>
+          <span class="pill success" id="menuCountLabel">0 productos</span>
+        </div>
+        <div id="menuGrid" class="menu-grid"></div>
+        <div class="wizard-actions-row wizard-actions-bottom">
+          <button type="button" class="ghost-btn" id="backToProfileBtn">Volver</button>
+          <button type="button" class="primary-btn" id="goToConfirmBtn">Continuar a confirmación</button>
+        </div>
+      </section>
+
+      <section class="wizard-panel" data-step="3">
+        <div class="section-title-row">
+          <div>
+            <p class="section-kicker">Paso 3</p>
+            <h2>Confirma tu pedido</h2>
+          </div>
+          <span class="pill success" id="cartCount">0 items</span>
+        </div>
+        <div id="cartItems" class="cart-items empty-state">
+          Aún no has agregado productos.
+        </div>
+        <div class="summary-box">
+          <div><span>Subtotal</span><strong id="subtotalValue">$0</strong></div>
+          <div><span>Domicilio</span><strong id="deliveryValue">$0</strong></div>
+          <div class="summary-total"><span>Total</span><strong id="totalValue">$0</strong></div>
+        </div>
+        <form id="notesForm">
+          <label>
+            Nota adicional
+            <textarea id="orderNotes" rows="3" placeholder="Ej. tocar el timbre una sola vez o indicar sabores a elección"></textarea>
+          </label>
+        </form>
+        <div class="wizard-actions-row wizard-actions-bottom">
+          <button type="button" class="ghost-btn" id="backToMenuBtn">Volver al menú</button>
+          <button id="submitOrderBtn" class="primary-btn">Enviar pedido</button>
+        </div>
+        <p class="helper-text">El pedido se guarda en el panel del administrador y también se abre WhatsApp con el mensaje listo para enviar.</p>
+      </section>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+  <script src="data.js"></script>
+  <script src="firebase-init.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
