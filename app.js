@@ -571,6 +571,15 @@ function renderOrdersHistory() {
       `;
     }
 
+    let paymentNotification = '';
+    if (order.paymentMethod && order.paymentMethod !== 'efectivo') {
+      if (order.paymentConfirmed) {
+        paymentNotification = `<div style="margin: 12px 0; padding: 10px; background: rgba(34, 197, 94, 0.1); border: 1px solid var(--success); border-radius: 8px; color: var(--success); font-weight: 600; text-align: center; font-size: 0.9rem;">✅ ¡Tu pago ha sido confirmado!</div>`;
+      } else {
+        paymentNotification = `<div style="margin: 12px 0; padding: 10px; background: rgba(245, 158, 11, 0.1); border: 1px solid var(--warning); border-radius: 8px; color: var(--warning); font-weight: 600; text-align: center; font-size: 0.9rem;">⏳ Validando comprobante de pago...</div>`;
+      }
+    }
+
     return `
       <div class="order-card" style="margin-bottom: 20px; box-shadow: var(--shadow);">
         <div class="order-header" style="padding-bottom: 12px; border-bottom: 1px dashed var(--line); align-items: flex-start;">
@@ -580,6 +589,7 @@ function renderOrdersHistory() {
           </div>
           <strong style="color:var(--primary); font-size:1.15rem;">${money(order.total)}</strong>
         </div>
+        ${paymentNotification}
         ${trackingHTML}
       </div>
     `;

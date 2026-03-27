@@ -37,6 +37,7 @@ const activeOrdersCount = document.getElementById('activeOrdersCount');
 const deliveredOrdersCount = document.getElementById('deliveredOrdersCount');
 const incomeValue = document.getElementById('incomeValue');
 const profitValue = document.getElementById('profitValue');
+const pendingPaymentsList = document.getElementById('pendingPaymentsList');
 
 let lastKnownOrderId = localStorage.getItem(storage.lastOrderSound) || null;
 let soundArmed = false;
@@ -114,6 +115,17 @@ function setStatus(orderId, status) {
   showToast(`Pedido ${orderId} actualizado a ${status}.`);
 }
 
+window.confirmPayment = (orderId) => {
+  const orders = getOrders();
+  const idx = orders.findIndex(o => o.id === orderId);
+  if (idx > -1) {
+    orders[idx].paymentConfirmed = true;
+    saveOrders(orders);
+    renderAll();
+    showToast('Pago de pedido confirmado.');
+  }
+};
+
 function deleteOrder(orderId) {
   saveOrders(getOrders().filter((order) => order.id !== orderId));
   renderAll();
@@ -143,7 +155,13 @@ function renderOrders() {
         <div><strong>Items:</strong><br>${order.items.map((item) => `• ${escapeHTML(item.name)} - ${escapeHTML(item.sizeLabel || '')} ${item.removed?.length ? `(sin ${escapeHTML(item.removed.join(', '))})` : ''}`).join('<br>')}</div>
         <div><strong>Notas:</strong> ${escapeHTML(order.notes || 'Sin notas')}</div>
         <div><strong>Total:</strong> ${money(order.total)}</div>
-        <div style="margin-top:4px;"><strong>Pago:</strong> ${order.paymentMethod === 'efectivo' ? '💵 Efectivo' : (order.paymentMethod === 'qr' ? '📱 QR' : (order.paymentMethod === 'breb' ? '🔑 Bre-B' : '💵 Efectivo'))}</div>
+        <div style="margin-top:4px; display: flex; align-items: center; gap: 8px;"><strong>Pago:</strong> ${order.paymentMethod === 'efectivo' ? '💵 Efectivo' : (order.paymentMethod === 'qr' ? '📱 QR' : (order.paymentMethod === 'breb' ? '🔑 Bre-B' : '💵 Efectivo'))}
+          ${order.paymentMethod && order.paymentMethod !== 'efectivo' ? 
+            (order.paymentConfirmed 
+              ? `<span class="pill success" style="font-size:0.75rem; padding: 2px 6px;">✅ Confirmado</span>`
+              : `<span class="pill warning" style="font-size:0.75rem; padding: 2px 6px;">⏳ Pendiente</span><button class="mini-btn success" onclick="confirmPayment('${order.id}')">Validar Pago</button>`)
+            : ''}
+        </div>
         ${order.receiptBase64 ? `<div style="margin-top:6px;"><a href="javascript:void(0)" onclick="const w=window.open('','_blank');w.document.write('<img src=\\'${order.receiptBase64}\\' style=\\'max-width:100%;\\'/>');" style="color:var(--primary); text-decoration:underline; font-weight:bold; font-size:0.9rem;">🖼️ Ver comprobante de pago</a></div>` : ''}
         ${order.rating ? `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);"><strong style="color:var(--warning)">Calificación del cliente:</strong> ${'★'.repeat(order.rating)}${'☆'.repeat(5 - order.rating)} ${order.review ? `<br><em>"${escapeHTML(order.review)}"</em>` : ''}</div>` : ''}
       </div>
@@ -274,12 +292,46 @@ function renderDashboard() {
   profitValue.textContent = money(delivered.reduce((sum, o) => sum + Number(o.estimatedProfit || 0), 0));
 }
 
+function renderPendingPayments() {
+  if (!pendingPaymentsList) return;
+  const orders = getOrders();
+  const pending = orders.filter(o => o.paymentMethod !== 'efectivo' && !o.paymentConfirmed && o.receiptBase64);
+  
+  if (!pending.length) {
+    pendingPaymentsList.innerHTML = '<div class="empty-state">No hay comprobantes pendientes por validar.</div>';
+    return;
+  }
+  
+  pendingPaymentsList.innerHTML = pending.map(order => `
+    <article class="order-card">
+      <div class="order-header">
+        <div>
+          <h3>${escapeHTML(order.id)}</h3>
+          <div class="menu-meta">${formatDate(order.createdAt)} · ${escapeHTML(order.customer.name)}</div>
+        </div>
+        ${badge(order.status)}
+      </div>
+      <div class="order-body">
+        <div><strong>Método:</strong> ${order.paymentMethod === 'qr' ? '📱 App/QR' : '🔑 Bre-B'}</div>
+        <div><strong>Total:</strong> <span style="color:var(--primary); font-weight:bold;">${money(order.total)}</span></div>
+        <div style="margin-top:8px;">
+          <a href="javascript:void(0)" onclick="const w=window.open('','_blank');w.document.write('<img src=\\'${order.receiptBase64}\\' style=\\'max-width:100%;\\'/>');" style="color:var(--primary); text-decoration:underline; font-weight:bold; font-size:0.9rem;">🖼️ Ver comprobante de pago</a>
+        </div>
+        <div style="margin-top:12px; display:flex; justify-content:flex-end;">
+          <button class="primary-btn mt-2" onclick="confirmPayment('${order.id}')">Confirmar Pago</button>
+        </div>
+      </div>
+    </article>
+  `).join('');
+}
+
 function renderAll() {
   renderOrders();
   renderSales();
   renderInventory();
   renderDashboard();
   renderSettings();
+  renderPendingPayments();
 }
 
 function checkSession() {
