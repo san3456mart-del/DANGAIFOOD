@@ -31,7 +31,7 @@ const floatingCartCount = document.getElementById('floatingCartCount');
 const floatingCartTotal = document.getElementById('floatingCartTotal');
 const floatingCartGoBtn = document.getElementById('floatingCartGoBtn');
 const goToOrdersBtn = document.getElementById('goToOrdersBtn');
-const historyToProfileBtn = document.getElementById('historyToProfileBtn');
+const historyBackBtn = document.getElementById('historyBackBtn');
 const historyToMenuBtn = document.getElementById('historyToMenuBtn');
 const clientOrdersList = document.getElementById('clientOrdersList');
 const panels = Array.from(document.querySelectorAll('.wizard-panel'));
@@ -39,6 +39,7 @@ const indicators = Array.from(document.querySelectorAll('.wizard-step'));
 
 let cart = [];
 let currentStep = 1;
+let previousStep = 2;
 let activeSize = 'personal';
 
 const money = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(n || 0));
@@ -73,6 +74,7 @@ function getProducts() {
 }
 
 function setStep(step) {
+  if (step === 4 && currentStep !== 4) previousStep = currentStep;
   currentStep = step;
   panels.forEach((panel) => panel.classList.toggle('active', Number(panel.dataset.step) === step));
   indicators.forEach((indicator) => {
@@ -292,6 +294,7 @@ function submitOrder() {
   notesInput.value = '';
   renderCart();
   renderMenu();
+  previousStep = 2; /* always go back to menu after a successful order if they click volver */
   setStep(4);
   toastMessage(`Pedido ${order.id} guardado. Puedes seguir su estado aquí.`);
 }
@@ -390,7 +393,7 @@ if (goToOrdersBtn) {
   });
 }
 
-if (historyToProfileBtn) historyToProfileBtn.addEventListener('click', () => setStep(1));
+if (historyBackBtn) historyBackBtn.addEventListener('click', () => setStep(previousStep || 2));
 if (historyToMenuBtn) historyToMenuBtn.addEventListener('click', () => setStep(2));
 backToProfileBtn.addEventListener('click', () => setStep(1));
 backToMenuBtn.addEventListener('click', () => setStep(2));
