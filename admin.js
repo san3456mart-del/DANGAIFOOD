@@ -139,8 +139,11 @@ function renderOrders() {
   }
   maybePlaySound(newestId);
 
-  // Oldest first (#1 at top), alternating orange / white cards
-  const orderedAsc = [...orders].reverse();
+  // Priority: preparacion → encamino → pendiente → entregado; within each group: oldest first
+  const statusPriority = { preparacion: 0, encamino: 1, pendiente: 2, entregado: 3 };
+  const orderedAsc = [...orders]
+    .reverse() // oldest first within each group
+    .sort((a, b) => (statusPriority[a.status] ?? 2) - (statusPriority[b.status] ?? 2));
 
   ordersList.innerHTML = orderedAsc.map((order, idx) => {
     const isOrange = idx % 2 === 0;
