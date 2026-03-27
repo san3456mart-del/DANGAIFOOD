@@ -5,7 +5,7 @@ const money = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currenc
 const getJson = (key, fallback) => JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
 const setJson = (key, value) => {
   localStorage.setItem(key, JSON.stringify(value));
-  if (window.FirebaseDB && (key === storage.products || key === storage.orders)) {
+  if (window.FirebaseDB && (key === storage.products || key === storage.orders || key === storage.settings)) {
     window.FirebaseDB.save(key, value);
   }
 };
@@ -424,7 +424,7 @@ if (settingsForm) {
       if (brebImageInput.files.length > 0) {
         settings.brebImage = await toBase64(brebImageInput.files[0]);
       }
-      if (deliveryFeeInput && deliveryFeeInput.value) {
+      if (deliveryFeeInput && deliveryFeeInput.value !== '') {
         settings.deliveryFee = Number(deliveryFeeInput.value);
       }
       setJson(storage.settings, settings);

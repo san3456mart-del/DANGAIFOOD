@@ -54,7 +54,7 @@ const money = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currenc
 const getJson = (key, fallback) => JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
 const setJson = (key, value) => {
   localStorage.setItem(key, JSON.stringify(value));
-  if (window.FirebaseDB && (key === storage.products || key === storage.orders || key === storage.users)) {
+  if (window.FirebaseDB && (key === storage.products || key === storage.orders || key === storage.users || key === storage.settings)) {
     window.FirebaseDB.save(key, value);
   }
 };
