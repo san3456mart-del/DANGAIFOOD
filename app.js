@@ -671,3 +671,12 @@ renderSizeTabs();
 renderMenu();
 renderCart();
 setStep(hasProfile ? 2 : 1);
+
+// Auto-refresh client order tracking when Firebase pushes status updates
+window.addEventListener('storage', () => {
+  renderOrdersHistory();
+});
+
+setInterval(() => {
+  renderOrdersHistory();
+}, 3000);
