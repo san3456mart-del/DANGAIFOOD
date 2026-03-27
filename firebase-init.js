@@ -27,8 +27,9 @@
       });
     },
     save: function(key, value) {
-      db.ref(key).set(value).catch(function(err) {
+      return db.ref(key).set(value).catch(function(err) {
         console.error("Firebase save error:", err);
+        throw err;
       });
     }
   };

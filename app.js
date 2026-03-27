@@ -52,10 +52,10 @@ let paymentReceiptBase64 = null;
 
 const money = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(n || 0));
 const getJson = (key, fallback) => JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
-const setJson = (key, value) => {
+const setJson = async (key, value) => {
   localStorage.setItem(key, JSON.stringify(value));
   if (window.FirebaseDB && (key === storage.products || key === storage.orders || key === storage.users || key === storage.settings)) {
-    window.FirebaseDB.save(key, value);
+    await window.FirebaseDB.save(key, value);
   }
 };
 const escapeHTML = (value) => String(value || '')
@@ -264,7 +264,7 @@ function buildWhatsappMessage(order) {
   ].join('\n');
 }
 
-function submitOrder() {
+async function submitOrder() {
   const profile = getJson(storage.profile, null);
   if (!profile) return toastMessage('Primero guarda tus datos.');
   if (!cart.length) return toastMessage('Agrega por lo menos una pizza.');
@@ -276,51 +276,61 @@ function submitOrder() {
   const stockCheck = cart.every((line) => Number(products.find((p) => p.id === line.productId)?.stock?.[line.sizeKey] || 0) > 0);
   if (!stockCheck) return toastMessage('Hay productos agotados. Actualiza el menú.');
 
-  const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
-  const totalCost = cart.reduce((sum, item) => sum + item.cost, 0);
-  const order = {
-    id: `PED-${Date.now().toString().slice(-6)}`,
-    createdAt: new Date().toISOString(),
-    status: 'pendiente',
-    customer: profile,
-    items: [...cart],
-    notes: notesInput.value.trim(),
-    subtotal,
-    deliveryFee: getDeliveryFee(),
-    total: subtotal + getDeliveryFee(),
-    cost: totalCost,
-    estimatedProfit: subtotal - totalCost,
-    paymentMethod,
-    receiptBase64: paymentReceiptBase64
-  };
-
-  const orders = getJson(storage.orders, []);
-  orders.unshift(order);
-  setJson(storage.orders, orders);
-
-  const updatedProducts = products.map((product) => {
-    const nextStock = { ...(product.stock || {}) };
-    cart.filter((item) => item.productId === product.id).forEach((item) => {
-      nextStock[item.sizeKey] = Math.max(0, Number(nextStock[item.sizeKey] || 0) - 1);
-    });
-    return { ...product, stock: nextStock };
-  });
-  setJson(storage.products, updatedProducts);
-
-  const url = `https://wa.me/${cfg.whatsappNumber}?text=${encodeURIComponent(buildWhatsappMessage(order))}`;
-  window.open(url, '_blank');
-  cart = [];
-  notesInput.value = '';
-  if (clientReceiptInput) clientReceiptInput.value = '';
-  paymentReceiptBase64 = null;
-  paymentMethod = 'efectivo';
-  if (typeof updatePaymentUI === 'function') updatePaymentUI();
+  submitOrderBtn.disabled = true;
+  submitOrderBtn.textContent = 'Enviando...';
   
-  renderCart();
-  renderMenu();
-  previousStep = 2; /* always go back to menu after a successful order if they click volver */
-  setStep(4);
-  toastMessage(`Pedido ${order.id} guardado. Puedes seguir su estado aquí.`);
+  try {
+    const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
+    const totalCost = cart.reduce((sum, item) => sum + item.cost, 0);
+    const order = {
+      id: `PED-${Date.now().toString().slice(-6)}`,
+      createdAt: new Date().toISOString(),
+      status: 'pendiente',
+      customer: profile,
+      items: [...cart],
+      notes: notesInput.value.trim(),
+      subtotal,
+      deliveryFee: getDeliveryFee(),
+      total: subtotal + getDeliveryFee(),
+      cost: totalCost,
+      estimatedProfit: subtotal - totalCost,
+      paymentMethod,
+      receiptBase64: paymentReceiptBase64
+    };
+
+    const orders = getJson(storage.orders, []);
+    orders.unshift(order);
+    await setJson(storage.orders, orders);
+
+    const updatedProducts = products.map((product) => {
+      const nextStock = { ...(product.stock || {}) };
+      cart.filter((item) => item.productId === product.id).forEach((item) => {
+        nextStock[item.sizeKey] = Math.max(0, Number(nextStock[item.sizeKey] || 0) - 1);
+      });
+      return { ...product, stock: nextStock };
+    });
+    await setJson(storage.products, updatedProducts);
+
+    const url = `https://wa.me/${cfg.whatsappNumber}?text=${encodeURIComponent(buildWhatsappMessage(order))}`;
+    window.open(url, '_blank');
+    cart = [];
+    notesInput.value = '';
+    if (clientReceiptInput) clientReceiptInput.value = '';
+    paymentReceiptBase64 = null;
+    paymentMethod = 'efectivo';
+    if (typeof updatePaymentUI === 'function') updatePaymentUI();
+    
+    renderCart();
+    renderMenu();
+    previousStep = 2;
+    setStep(4);
+    toastMessage(`Pedido ${order.id} guardado. Puedes seguir su estado aquí.`);
+  } catch (err) {
+    toastMessage('Hubo un error al guardar el pedido. Intenta nuevamente.');
+  } finally {
+    submitOrderBtn.disabled = false;
+    submitOrderBtn.textContent = 'Enviar pedido';
+  }
 }
 
 if (tabLoginBtn && tabRegisterBtn) {

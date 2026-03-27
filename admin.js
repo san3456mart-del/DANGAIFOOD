@@ -3,10 +3,10 @@ const storage = cfg.storageKeys;
 const sizes = cfg.sizes;
 const money = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(n || 0));
 const getJson = (key, fallback) => JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
-const setJson = (key, value) => {
+const setJson = async (key, value) => {
   localStorage.setItem(key, JSON.stringify(value));
   if (window.FirebaseDB && (key === storage.products || key === storage.orders || key === storage.settings)) {
-    window.FirebaseDB.save(key, value);
+    await window.FirebaseDB.save(key, value);
   }
 };
 const escapeHTML = (value) => String(value || '')
