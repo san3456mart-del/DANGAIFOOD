@@ -153,15 +153,18 @@ function renderMenu() {
     const card = document.createElement('article');
     card.className = 'menu-item';
     card.innerHTML = `
-      <div>
-        <div class="pizza-size-badge">${escapeHTML(sizeInfo.shortLabel)} · ${escapeHTML(sizeInfo.subtitle)}</div>
-        <h3>${escapeHTML(product.name)}</h3>
-        <div class="menu-price">${money(product.prices[activeSize])}</div>
-        <div class="menu-meta">${escapeHTML(product.ingredients)}</div>
-        <div class="menu-meta">Disponibles: ${stock}</div>
+      <div class="rappi-menu-row">
+        <div class="menu-image-placeholder">🍕</div>
+        <div class="menu-details">
+          <div class="pizza-size-badge">${escapeHTML(sizeInfo.shortLabel)} · ${escapeHTML(sizeInfo.subtitle)}</div>
+          <h3>${escapeHTML(product.name)}</h3>
+          <div class="menu-price">${money(product.prices[activeSize])}</div>
+          <div class="menu-meta">${escapeHTML(product.ingredients)}</div>
+          ${stock < 5 ? `<div class="menu-stock-warning">Solo quedan ${stock} disponibles</div>` : ''}
+        </div>
       </div>
       ${options}
-      <button class="primary-btn add-btn" data-id="${product.id}" data-size-key="${activeSize}" ${stock < 1 ? 'disabled' : ''}>${stock < 1 ? 'Agotado' : 'Agregar al pedido'}</button>
+      <button class="primary-btn add-btn" data-id="${product.id}" data-size-key="${activeSize}" ${stock < 1 ? 'disabled' : ''}>${stock < 1 ? 'Agotado' : 'Añadir'}</button>
     `;
     menuGrid.appendChild(card);
   });
