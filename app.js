@@ -612,9 +612,10 @@ function renderOrdersHistory() {
       if (currentIndex === -1) currentIndex = 0;
       
       trackingHTML = `
-        <div class="tracker-steps">
+        <div class="tracker-steps" style="margin-top:${currentIndex === 1 ? '90px' : '16px'}; transition:margin 0.3s ease;">
           ${steps.map((step, idx) => `
-            <div class="tracker-step ${currentIndex >= idx ? 'active' : ''}">
+            <div class="tracker-step ${currentIndex >= idx ? 'active' : ''}" style="position:relative;">
+              ${step === 'preparacion' && currentIndex === 1 ? `<div style="position:absolute; bottom:calc(100% + 12px); width:80px; border-radius:14px; overflow:hidden; border:3px solid var(--success); box-shadow:0 8px 24px rgba(16,185,129,0.3); z-index:10;"><video src="public/en_preparacion.mp4" autoplay loop muted playsinline style="width:100%; display:block; aspect-ratio:1; object-fit:cover;"></video></div>` : ''}
               <div class="tracker-dot"></div>
               <span>${labels[idx]}</span>
             </div>
