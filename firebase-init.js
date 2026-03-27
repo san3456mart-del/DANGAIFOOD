@@ -1,4 +1,4 @@
-(function() {
+(function () {
   const firebaseConfig = {
     apiKey: "AIzaSyBCRX9CTc9LRYYFJBdfoUY_cwH3lcF604Q",
     authDomain: "dangai-food.firebaseapp.com",
@@ -13,8 +13,22 @@
   const db = firebase.database();
 
   window.FirebaseDB = {
-    syncKey: function(key) {
-      db.ref(key).on('value', function(snapshot) {
+    /**
+     * Reads the current value of a key ONCE from Firebase (not cached).
+     * Returns a Promise that resolves with the value (or null).
+     */
+    readOnce: function (key) {
+      return db.ref(key).once('value').then(function (snap) {
+        return snap.val();
+      });
+    },
+
+    /**
+     * Listens to a Firebase key continuously and syncs to localStorage.
+     * Dispatches a 'storage' event on change so the UI can react.
+     */
+    syncKey: function (key) {
+      db.ref(key).on('value', function (snapshot) {
         const data = snapshot.val();
         if (data !== null) {
           const newData = JSON.stringify(data);
@@ -26,16 +40,19 @@
         }
       });
     },
-    save: function(key, value) {
-      return db.ref(key).set(value).catch(function(err) {
-        console.error("Firebase save error:", err);
+
+    /**
+     * Saves a value to Firebase and returns the Promise.
+     */
+    save: function (key, value) {
+      return db.ref(key).set(value).catch(function (err) {
+        console.error('Firebase save error:', err);
         throw err;
       });
     }
   };
 
   const keys = window.RestaurantAppConfig.storageKeys;
-  // Solo sincronizamos productos, ordenes y usuarios para el sistema
   window.FirebaseDB.syncKey(keys.products);
   window.FirebaseDB.syncKey(keys.orders);
   if (keys.users) window.FirebaseDB.syncKey(keys.users);

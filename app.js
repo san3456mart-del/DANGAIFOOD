@@ -347,52 +347,95 @@ if (tabLoginBtn && tabRegisterBtn) {
 }
 
 if (loginFormClient) {
-  loginFormClient.addEventListener('submit', (e) => {
+  loginFormClient.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const btn = loginFormClient.querySelector('button[type="submit"]');
     const loginUser = document.getElementById('loginUser').value.trim().toLowerCase();
     const loginPass = document.getElementById('loginPass').value.trim();
-    const users = getJson(storage.users, []);
+    if (!loginUser || !loginPass) return toastMessage('Completa usuario y contraseña.');
 
-    const user = users.find(u => u.username === loginUser && u.password === loginPass);
-    if (!user) {
-      return toastMessage('Usuario o contraseña incorrectos.');
+    btn.disabled = true;
+    btn.textContent = 'Verificando...';
+    try {
+      // ALWAYS read from Firebase to support cross-device login
+      let users = null;
+      if (window.FirebaseDB) {
+        users = await window.FirebaseDB.readOnce(storage.users);
+      }
+      // Fallback to localStorage if Firebase unavailable
+      if (!Array.isArray(users)) {
+        users = getJson(storage.users, []);
+      } else {
+        // Sync to local cache
+        localStorage.setItem(storage.users, JSON.stringify(users));
+      }
+
+      const user = users.find(u => u.username === loginUser && u.password === loginPass);
+      if (!user) {
+        return toastMessage('Usuario o contraseña incorrectos.');
+      }
+      localStorage.setItem(storage.profile, JSON.stringify(user));
+      loadProfile();
+      setStep(2);
+      toastMessage(`Bienvenido de vuelta, ${user.name} 👋`);
+    } catch (err) {
+      toastMessage('Error de conexión. Intenta nuevamente.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Ingresar y ordenar';
     }
-
-    setJson(storage.profile, user);
-    loadProfile();
-    setStep(2);
-    toastMessage(`Bienvenido de vuelta, ${user.name}`);
   });
 }
 
-profileForm.addEventListener('submit', (e) => {
+profileForm.addEventListener('submit', async (e) => {
   e.preventDefault();
+  const btn = profileForm.querySelector('button[type="submit"]');
   const regUser = document.getElementById('regUser').value.trim().toLowerCase();
   const regPass = document.getElementById('regPass').value.trim();
-  const users = getJson(storage.users, []);
+  if (!regUser || regPass.length < 4) return toastMessage('Completa todos los campos. Contraseña mín. 4 caracteres.');
 
-  if (users.some(u => u.username === regUser)) {
-    return toastMessage('Ese usuario ya existe. Inicia sesión.');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+  try {
+    // ALWAYS read fresh list from Firebase before registering
+    let users = null;
+    if (window.FirebaseDB) {
+      users = await window.FirebaseDB.readOnce(storage.users);
+    }
+    if (!Array.isArray(users)) {
+      users = getJson(storage.users, []);
+    } else {
+      localStorage.setItem(storage.users, JSON.stringify(users));
+    }
+
+    if (users.some(u => u.username === regUser)) {
+      return toastMessage('Ese usuario ya existe. Inicia sesión.');
+    }
+
+    const profile = {
+      clientId: crypto.randomUUID(),
+      username: regUser,
+      password: regPass,
+      name: document.getElementById('name').value.trim(),
+      phone: document.getElementById('regPhone')?.value.trim() || '',
+      complex: document.getElementById('complex').value.trim(),
+      tower: document.getElementById('tower').value.trim(),
+      apartment: document.getElementById('apartment').value.trim()
+    };
+
+    users.push(profile);
+    // Save to Firebase first, then proceed
+    await setJson(storage.users, users);
+    localStorage.setItem(storage.profile, JSON.stringify(profile));
+    loadProfile();
+    setStep(2);
+    toastMessage('¡Cuenta creada exitosamente! 🎉');
+  } catch (err) {
+    toastMessage('Error al guardar. Verifica tu conexión.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Registrarme y ordenar';
   }
-
-  const profile = {
-    clientId: crypto.randomUUID(),
-    username: regUser,
-    password: regPass,
-    name: document.getElementById('name').value.trim(),
-    phone: document.getElementById('regPhone')?.value.trim() || '',
-    complex: document.getElementById('complex').value.trim(),
-    tower: document.getElementById('tower').value.trim(),
-    apartment: document.getElementById('apartment').value.trim()
-  };
-
-  users.push(profile);
-  setJson(storage.users, users);
-  
-  setJson(storage.profile, profile);
-  loadProfile();
-  setStep(2);
-  toastMessage('Cuenta creada exitosamente.');
 });
 
 if (editProfileBtn) {
