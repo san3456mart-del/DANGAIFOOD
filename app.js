@@ -21,6 +21,10 @@ const notesInput = document.getElementById('orderNotes');
 const goToConfirmBtn = document.getElementById('goToConfirmBtn');
 const backToProfileBtn = document.getElementById('backToProfileBtn');
 const backToMenuBtn = document.getElementById('backToMenuBtn');
+const floatingCartBtn = document.getElementById('floatingCartBtn');
+const floatingCartCount = document.getElementById('floatingCartCount');
+const floatingCartTotal = document.getElementById('floatingCartTotal');
+const floatingCartGoBtn = document.getElementById('floatingCartGoBtn');
 const panels = Array.from(document.querySelectorAll('.wizard-panel'));
 const indicators = Array.from(document.querySelectorAll('.wizard-step'));
 
@@ -68,6 +72,19 @@ function setStep(step) {
     indicator.classList.toggle('done', indicatorStep < step);
   });
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  updateFloatingCart();
+}
+
+function updateFloatingCart() {
+  if (currentStep === 2 && cart.length > 0) {
+    floatingCartCount.textContent = `${cart.length} items`;
+    const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
+    const total = subtotal + cfg.deliveryFee;
+    floatingCartTotal.textContent = money(total);
+    floatingCartBtn.classList.remove('hidden');
+  } else {
+    floatingCartBtn.classList.add('hidden');
+  }
 }
 
 function lockProfileInputs(disabled) {
@@ -211,6 +228,7 @@ function renderCart() {
   subtotalValue.textContent = money(subtotal);
   deliveryValue.textContent = money(delivery);
   totalValue.textContent = money(total);
+  updateFloatingCart();
 }
 
 function buildWhatsappMessage(order) {
@@ -299,6 +317,14 @@ goToConfirmBtn.addEventListener('click', () => {
   if (!cart.length) return toastMessage('Agrega por lo menos una pizza antes de continuar.');
   setStep(3);
 });
+
+if (floatingCartGoBtn) {
+  floatingCartGoBtn.addEventListener('click', () => {
+    if (!getJson(storage.profile, null)) return toastMessage('Primero guarda tus datos.');
+    if (!cart.length) return toastMessage('Agrega por lo menos una pizza antes de continuar.');
+    setStep(3);
+  });
+}
 
 backToProfileBtn.addEventListener('click', () => setStep(1));
 backToMenuBtn.addEventListener('click', () => setStep(2));

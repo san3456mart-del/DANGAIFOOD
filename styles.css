@@ -175,3 +175,11 @@ th { color: var(--secondary); font-size: .85rem; text-transform: uppercase; lett
   .wizard-shell { padding: 12px 14px 40px; }
   .card { padding: 20px; }
 }
+
+/* Floating Cart */
+.floating-cart { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 400px; background: rgba(7, 17, 30, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--secondary); border-radius: 999px; display: flex; align-items: center; justify-content: space-between; padding: 12px 12px 12px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(24,209,255,0.2); z-index: 1000; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.floating-cart.hidden { opacity: 0; transform: translate(-50%, 40px); pointer-events: none; }
+.floating-cart div { display: flex; align-items: center; gap: 12px; }
+.floating-cart strong { font-size: 1.15rem; color: #fff; letter-spacing: 0.02em; }
+.floating-cart button { margin: 0; padding: 12px 20px; border-radius: 999px; box-shadow: none; font-size: 0.95rem; }
+.floating-cart button:hover { transform: scale(1.02); }

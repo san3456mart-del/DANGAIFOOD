@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 </head>
 <body>
   <div class="video-shell">
@@ -138,6 +139,14 @@
   </main>
 
   <div id="toast" class="toast"></div>
+
+  <div id="floatingCartBtn" class="floating-cart hidden">
+    <div>
+      <span class="pill accent" id="floatingCartCount">0</span>
+      <strong id="floatingCartTotal">$0</strong>
+    </div>
+    <button class="primary-btn" id="floatingCartGoBtn">Ver pedido</button>
+  </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>

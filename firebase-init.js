@@ -5,7 +5,8 @@
     projectId: "dangai-food",
     storageBucket: "dangai-food.firebasestorage.app",
     messagingSenderId: "42759109234",
-    appId: "1:42759109234:web:64056ab9c358c2858de0eb"
+    appId: "1:42759109234:web:64056ab9c358c2858de0eb",
+    databaseURL: "https://dangai-food-default-rtdb.firebaseio.com"
   };
 
   firebase.initializeApp(firebaseConfig);
