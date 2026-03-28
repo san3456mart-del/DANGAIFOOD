@@ -909,9 +909,6 @@ if (additionalForm) {
 if (newAddlBtn)    newAddlBtn.addEventListener('click', resetAddlForm);
 if (cancelAddlBtn) cancelAddlBtn.addEventListener('click', resetAddlForm);
 
-resetProductForm();
-checkSession();
-
 /* ══════════════════════════════════════════════════════════════════════
    SISTEMA DE CIERRE DE CAJA DIARIO
 ══════════════════════════════════════════════════════════════════════ */
@@ -1335,3 +1332,5 @@ if (closeCashBtn) {
   });
 }
 
+resetProductForm();
+checkSession();
