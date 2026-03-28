@@ -135,12 +135,16 @@ function renderOrders() {
   const orders = getOrders();
   const newestId = orders[0]?.id;
   if (!orders.length) {
-    ordersList.innerHTML = '<div class="empty-state">Aún no hay pedidos registrados.</div>';
+    ordersList.innerHTML = `
+      <div class="empty-state" style="padding:60px 24px;">
+        <div style="font-size:3rem;margin-bottom:12px;">🍕</div>
+        <strong style="display:block;font-size:1.1rem;color:var(--secondary);margin-bottom:6px;">Sin pedidos por ahora</strong>
+        <span>Los nuevos pedidos aparecerán aquí en tiempo real.</span>
+      </div>`;
     return;
   }
   maybePlaySound(newestId);
 
-  // Filter by search query
   const query = (ordersSearchInput?.value || '').toLowerCase().trim();
   const filtered = query
     ? orders.filter(o =>
@@ -154,62 +158,139 @@ function renderOrders() {
     : orders;
 
   if (!filtered.length && query) {
-    ordersList.innerHTML = `<div class="empty-state">❌ No se encontró ningún pedido con "${escapeHTML(query)}".</div>`;
+    ordersList.innerHTML = `<div class="empty-state">❌ Sin resultados para "<strong>${escapeHTML(query)}</strong>".</div>`;
     return;
   }
 
-  // Priority: preparacion → encamino → pendiente → entregado; within each group: oldest first
   const statusPriority = { preparacion: 0, encamino: 1, pendiente: 2, entregado: 3 };
-  const orderedAsc = [...filtered]
-    .reverse() // oldest first within each group
+  const statusMeta = {
+    pendiente:   { label: 'Pendiente',   color: '#f59e0b', bg: 'rgba(245,158,11,0.08)',   icon: '🕐', border: 'rgba(245,158,11,0.25)' },
+    preparacion: { label: 'En preparación', color: '#10b981', bg: 'rgba(16,185,129,0.08)', icon: '👨‍🍳', border: 'rgba(16,185,129,0.25)' },
+    encamino:    { label: 'En camino',    color: '#ff4500', bg: 'rgba(255,69,0,0.07)',    icon: '🛵', border: 'rgba(255,69,0,0.25)' },
+    entregado:   { label: 'Entregado',    color: '#6b7280', bg: 'rgba(107,114,128,0.06)', icon: '✅', border: 'rgba(107,114,128,0.2)' },
+  };
+
+  const sorted = [...filtered]
+    .reverse()
     .sort((a, b) => (statusPriority[a.status] ?? 2) - (statusPriority[b.status] ?? 2));
 
-  ordersList.innerHTML = orderedAsc.map((order, idx) => {
-    const isOrange = idx % 2 === 0;
-    const cardStyle = isOrange
-      ? 'border:2.5px solid var(--primary);background:#fff8f5;'
-      : 'border:2.5px solid #e5e7eb;background:#ffffff;';
-    const rowBg = isOrange ? 'background:rgba(255,90,0,0.04);' : 'background:#f9fafb;';
-    const numBg = isOrange ? 'var(--primary)' : '#6b7280';
-    const numBadge = `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:${numBg};color:#fff;font-weight:800;font-size:0.8rem;margin-right:8px;flex-shrink:0;">${idx + 1}</span>`;
+  const paymentLabel = m => m === 'qr' ? '📱 QR' : m === 'breb' ? '🔑 Bre-B' : '💵 Efectivo';
+
+  ordersList.innerHTML = sorted.map((order, idx) => {
+    const sm = statusMeta[order.status] || statusMeta.pendiente;
+    const isActive = order.status !== 'entregado';
+    const discount = order.discount > 0 ? `<span style="color:var(--success);font-weight:700;">-${money(order.discount)}</span>` : '';
+
+    // Items list
+    const itemsList = order.items.map(item =>
+      `<div class="oc-item-row">
+        <span class="oc-item-dot" style="background:${sm.color};"></span>
+        <span class="oc-item-name">${escapeHTML(item.name)}</span>
+        <span class="oc-item-size">${escapeHTML(item.sizeLabel || '')}</span>
+        ${item.removed?.length ? `<span class="oc-item-removed">sin ${escapeHTML(item.removed.join(', '))}</span>` : ''}
+        <span class="oc-item-price">${money(item.price)}</span>
+      </div>`
+    ).join('');
+
+    // Payment block
+    const payBlock = `
+      <div class="oc-pay-row">
+        <span>${paymentLabel(order.paymentMethod)}</span>
+        ${order.paymentMethod && order.paymentMethod !== 'efectivo'
+          ? order.paymentConfirmed
+            ? `<span class="oc-tag success">✅ Pago confirmado</span>`
+            : `<span class="oc-tag warning">⏳ Pendiente</span>
+               <button class="oc-action-btn" onclick="confirmPayment('${order.id}')">Validar pago</button>`
+          : ''}
+        ${order.receiptBase64
+          ? `<a href="javascript:void(0)" onclick="const w=window.open('','_blank');w.document.write('<img src=\\'${order.receiptBase64}\\' style=\\'max-width:100%;\\'/>');return false;"
+              class="oc-action-btn">🖼️ Comprobante</a>`
+          : ''}
+      </div>`;
+
+    // Coupon
+    const couponBlock = order.couponId ? `
+      <div class="oc-info-row">
+        <span class="oc-label">🎟️ Cupón</span>
+        <span style="color:var(--success);font-weight:600;">${order.couponId} &mdash; Descuento: ${money(order.discount || 0)}</span>
+      </div>` : '';
+
+    // Rating
+    const ratingBlock = order.rating ? `
+      <div class="oc-rating-bar">
+        <span style="font-weight:700;color:var(--warning)">${'★'.repeat(order.rating)}${'☆'.repeat(5 - order.rating)}</span>
+        ${order.review ? `<em style="color:var(--muted);font-size:0.85rem;">"${escapeHTML(order.review)}"</em>` : ''}
+      </div>` : '';
+
+    // Status buttons
+    const statusBtns = ['pendiente','preparacion','encamino','entregado'].map(s => {
+      const active = order.status === s;
+      const sm2 = statusMeta[s];
+      return `<button class="oc-status-btn ${active ? 'oc-status-active' : ''}"
+        style="${active ? `background:${sm2.color};color:#fff;border-color:${sm2.color};` : ''}"
+        data-status="${s}" data-order-id="${order.id}">
+        ${sm2.icon} ${sm2.label}
+      </button>`;
+    }).join('');
+
     return `
-    <article class="order-card" style="${cardStyle}border-radius:16px;margin-bottom:16px;overflow:hidden;">
-      <div class="order-header" style="border-bottom:1px dashed ${isOrange ? 'var(--primary)' : '#e5e7eb'};">
-        <div style="display:flex;align-items:center;">
-          ${numBadge}
+    <article class="oc-card" style="border-left:4px solid ${sm.color};">
+      <!-- HEADER -->
+      <div class="oc-header" style="background:${sm.bg};">
+        <div class="oc-header-left">
+          <span class="oc-num" style="background:${sm.color};">${idx + 1}</span>
           <div>
-            <h3 style="margin:0;">${escapeHTML(order.id)}</h3>
-            <div class="menu-meta">${formatDate(order.createdAt)} · ${escapeHTML(order.customer.name)}</div>
+            <div class="oc-id">${escapeHTML(order.id)}</div>
+            <div class="oc-meta">${formatDate(order.createdAt)}</div>
           </div>
         </div>
-        ${badge(order.status)}
-      </div>
-      <div class="order-body">
-        <div><strong>Ubicación:</strong> ${escapeHTML(order.customer.complex)}, ${escapeHTML(order.customer.tower)}, apto ${escapeHTML(order.customer.apartment)}</div>
-        <div><strong>Items:</strong><br>${order.items.map((item) => `• ${escapeHTML(item.name)} - ${escapeHTML(item.sizeLabel || '')} ${item.removed?.length ? `(sin ${escapeHTML(item.removed.join(', '))})` : ''}`).join('<br>')}</div>
-        <div><strong>Notas:</strong> ${escapeHTML(order.notes || 'Sin notas')}</div>
-        <div><strong>Total:</strong> ${money(order.total)}</div>
-        <div style="margin-top:4px;display:flex;align-items:center;gap:8px;"><strong>Pago:</strong> ${order.paymentMethod === 'efectivo' ? '💵 Efectivo' : (order.paymentMethod === 'qr' ? '📱 QR' : (order.paymentMethod === 'breb' ? '🔑 Bre-B' : '💵 Efectivo'))}
-          ${order.paymentMethod && order.paymentMethod !== 'efectivo' ?
-            (order.paymentConfirmed
-              ? `<span class="pill success" style="font-size:0.75rem;padding:2px 6px;">✅ Confirmado</span>`
-              : `<span class="pill warning" style="font-size:0.75rem;padding:2px 6px;">⏳ Pendiente</span><button class="mini-btn success" onclick="confirmPayment('${order.id}')">Validar Pago</button>`)
-            : ''}
+        <div class="oc-header-right">
+          <span class="oc-status-pill" style="background:${sm.bg};color:${sm.color};border:1px solid ${sm.border};">
+            ${sm.icon} ${sm.label}
+          </span>
+          <span class="oc-total">${money(order.total)}</span>
         </div>
-        ${order.receiptBase64 ? `<div style="margin-top:6px;"><a href="javascript:void(0)" onclick="const w=window.open('','_blank');w.document.write('<img src=\\'${order.receiptBase64}\\' style=\\'max-width:100%;\\'/>');" style="color:var(--primary);text-decoration:underline;font-weight:bold;font-size:0.9rem;">🖼️ Ver comprobante de pago</a></div>` : ''}
-        ${order.rating ? `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);"><strong style="color:var(--warning)">Calificación del cliente:</strong> ${'★'.repeat(order.rating)}${'☆'.repeat(5 - order.rating)} ${order.review ? `<br><em>"${escapeHTML(order.review)}"</em>` : ''}</div>` : ''}
       </div>
-      <div class="status-row" style="${rowBg}">
-        ${['pendiente', 'preparacion', 'encamino', 'entregado'].map((status) => `
-          <button class="status-btn ${order.status === status ? 'active' : ''}" data-status="${status}" data-order-id="${order.id}">${status === 'preparacion' ? 'Preparación' : status === 'encamino' ? 'En camino' : status.charAt(0).toUpperCase() + status.slice(1)}</button>
-        `).join('')}
-        <button class="mini-btn danger" data-delete-id="${order.id}">Eliminar</button>
-      </div>
-    </article>
-  `;}).join('');
 
-  ordersList.querySelectorAll('[data-status]').forEach((btn) => btn.addEventListener('click', () => setStatus(btn.dataset.orderId, btn.dataset.status)));
-  ordersList.querySelectorAll('[data-delete-id]').forEach((btn) => btn.addEventListener('click', () => deleteOrder(btn.dataset.deleteId)));
+      <!-- BODY: Two columns -->
+      <div class="oc-body">
+        <!-- LEFT: Client & location -->
+        <div class="oc-col">
+          <p class="oc-col-title">👤 Cliente</p>
+          <div class="oc-info-row"><span class="oc-label">Nombre</span><strong>${escapeHTML(order.customer.name)}</strong></div>
+          <div class="oc-info-row"><span class="oc-label">Ubicación</span><span>${escapeHTML(order.customer.complex)}, T${escapeHTML(order.customer.tower)}, Apto ${escapeHTML(order.customer.apartment)}</span></div>
+          ${order.customer.phone ? `<div class="oc-info-row"><span class="oc-label">Teléfono</span><a href="https://wa.me/57${order.customer.phone.replace(/\D/g,'')}" target="_blank" style="color:var(--success);font-weight:600;text-decoration:none;">💬 ${escapeHTML(order.customer.phone)}</a></div>` : ''}
+          ${order.notes ? `<div class="oc-info-row"><span class="oc-label">Nota</span><em style="color:var(--muted);">${escapeHTML(order.notes)}</em></div>` : ''}
+          ${couponBlock}
+        </div>
+
+        <!-- RIGHT: Items & payment -->
+        <div class="oc-col">
+          <p class="oc-col-title">🍕 Pedido</p>
+          <div class="oc-items-list">${itemsList}</div>
+          <div class="oc-price-summary">
+            ${order.discount > 0 ? `<div class="oc-price-row"><span>Descuento</span>${discount}</div>` : ''}
+            <div class="oc-price-row oc-price-total"><span>Total</span><strong>${money(order.total)}</strong></div>
+          </div>
+          <p class="oc-col-title" style="margin-top:12px;">💳 Pago</p>
+          ${payBlock}
+        </div>
+      </div>
+
+      ${ratingBlock}
+
+      <!-- FOOTER: Status + Delete -->
+      <div class="oc-footer">
+        <div class="oc-status-group">${statusBtns}</div>
+        <button class="oc-delete-btn" data-delete-id="${order.id}">🗑️ Eliminar</button>
+      </div>
+    </article>`;
+  }).join('');
+
+  ordersList.querySelectorAll('[data-status]').forEach(btn =>
+    btn.addEventListener('click', () => setStatus(btn.dataset.orderId, btn.dataset.status)));
+  ordersList.querySelectorAll('[data-delete-id]').forEach(btn =>
+    btn.addEventListener('click', () => deleteOrder(btn.dataset.deleteId)));
 }
 
 function renderSales() {
