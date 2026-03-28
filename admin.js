@@ -492,11 +492,15 @@ function renderCustomers() {
         <td style="text-align:center;">
           <div class="customer-row-coupons">${couponChips}</div>
         </td>
-        <td style="text-align:center;">
+        <td style="text-align:center; display:flex; flex-direction:column; gap:4px; align-items:center;">
           <button class="mini-btn" style="background:linear-gradient(135deg,rgba(255,69,0,0.1),rgba(255,107,53,0.06));color:var(--primary);border:1px solid rgba(255,69,0,0.2);border-radius:12px;padding:8px 14px;white-space:nowrap;"
             data-send-coupon-client-id="${user.clientId}"
             data-send-coupon-client-name="${escapeHTML(user.name)}">
             🎟️ Enviar cupón
+          </button>
+          <button class="mini-btn danger" style="border-radius:12px;padding:8px 14px;white-space:nowrap;"
+            data-delete-client-id="${user.clientId}">
+            🗑️ Eliminar
           </button>
         </td>
       </tr>
@@ -516,6 +520,27 @@ function renderCustomers() {
   // Send coupon buttons
   customersTableBody.querySelectorAll('[data-send-coupon-client-id]').forEach(btn => {
     btn.addEventListener('click', () => openCouponModal(btn.dataset.sendCouponClientId, btn.dataset.sendCouponClientName));
+  });
+
+  // Delete client buttons
+  customersTableBody.querySelectorAll('[data-delete-client-id]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const clientId = btn.dataset.deleteClientId;
+      if (confirm('¿Estás seguro de que deseas eliminar este cliente?')) {
+        const users = getJson(storage.users, []);
+        const updatedUsers = users.filter(u => u.clientId !== clientId);
+        setJson(storage.users, updatedUsers);
+        
+        const coupons = getJson('restaurant_coupons_v2', {});
+        if (coupons[clientId]) {
+          delete coupons[clientId];
+          setJson('restaurant_coupons_v2', coupons);
+        }
+        
+        renderCustomers();
+        showToast('Cliente eliminado correctamente.');
+      }
+    });
   });
 }
 
@@ -893,11 +918,20 @@ checkSession();
 
 // ─── Helpers de fecha ───────────────────────────────────────────────
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  // Usar fecha LOCAL (no UTC) para evitar desfases de zona horaria
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 function dateStr(d) {
-  // Returns YYYY-MM-DD from an ISO string or Date
-  return new Date(d).toISOString().slice(0, 10);
+  // Convierte ISO string a YYYY-MM-DD en hora LOCAL
+  const dt = new Date(d);
+  const y  = dt.getFullYear();
+  const mo = String(dt.getMonth() + 1).padStart(2, '0');
+  const dy = String(dt.getDate()).padStart(2, '0');
+  return `${y}-${mo}-${dy}`;
 }
 function formatDateLong(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
@@ -1180,19 +1214,32 @@ if (expenseForm) {
     e.preventDefault();
     const desc = expenseDesc?.value.trim();
     const amt  = Number(expenseAmt?.value);
-    const cat  = expenseCat?.value.trim() || 'Otros';
+    const cat  = expenseCat?.value || 'Insumos';
+    // Siempre tomar la fecha del input (que ya se inicializó con todayStr())
     const date = cashDateInput?.value || todayStr();
 
-    if (!desc) return showToast('Describe el gasto.');
-    if (!amt || amt <= 0) return showToast('Ingresa un monto válido.');
+    if (!desc) return showToast('⚠️ Describe el gasto.');
+    if (!amt || amt <= 0) return showToast('⚠️ Ingresa un monto válido mayor a 0.');
+    if (!date) return showToast('⚠️ Selecciona una fecha primero.');
 
     const expenses = getExpenses();
-    expenses.push({ id: `exp-${Date.now()}`, date, description: desc, amount: amt, category: cat, createdAt: new Date().toISOString() });
+    expenses.push({
+      id: `exp-${Date.now()}`,
+      date,
+      description: desc,
+      amount: amt,
+      category: cat,
+      createdAt: new Date().toISOString()
+    });
     saveExpensesStore(expenses);
-    expenseForm.reset();
+
+    // Limpiar formulario manualmente (más confiable que .reset())
+    expenseDesc.value = '';
+    expenseAmt.value  = '';
     if (expenseCat) expenseCat.value = 'Insumos';
+
     renderCashRegister();
-    showToast('Gasto registrado.');
+    showToast(`✅ Gasto "${desc}" de ${money(amt)} registrado.`);
   });
 }
 
