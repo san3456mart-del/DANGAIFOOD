@@ -52,79 +52,146 @@
         </div>
       </div>
 
-      <section class="wizard-panel active" data-step="1" id="profileCard">
-        <div class="tabs" style="margin-bottom: 20px; display: flex; gap: 8px;">
-          <button type="button" class="tab-btn active" id="tabLoginBtn" style="flex:1;">Ingresar</button>
-          <button type="button" class="tab-btn" id="tabRegisterBtn" style="flex:1;">Crear cuenta</button>
+      <section class="wizard-panel active auth-panel" data-step="1" id="profileCard">
+
+        <!-- ── HERO BRAND ─────────────────────────────────────── -->
+        <div class="auth-hero">
+          <div class="auth-hero-logo">
+            <img src="public/DANGAI.jpg" alt="Dangai Food" style="height:56px;width:auto;border-radius:10px;" />
+          </div>
+          <h2 class="auth-hero-title">¡Hola! Bienvenido 👋</h2>
+          <p class="auth-hero-sub">Pide tus pizzas favoritas en minutos.<br>Regístrate o inicia sesión para continuar.</p>
         </div>
 
-        <div id="loginView">
-          <div class="section-title-row">
-            <div>
-              <p class="section-kicker">Paso 1</p>
-              <h2>Iniciar sesión</h2>
-            </div>
-            <span class="pill" id="profileStatus">Desconectado</span>
-          </div>
-          <p class="helper-text">Bienvenido de vuelta, ingresa para continuar tus pedidos.</p>
-          <form id="loginFormClient" class="grid-form narrow-form">
-            <label class="full-width">
-              Usuario
-              <input type="text" id="loginUser" required placeholder="Ej. jperez" />
-            </label>
-            <label class="full-width">
-              Contraseña
-              <input type="password" id="loginPass" required placeholder="Tu contraseña" />
-            </label>
-            <div class="form-actions full-width wizard-actions-row">
-              <button type="submit" class="primary-btn">Ingresar y ordenar</button>
-            </div>
-          </form>
+        <!-- ── TOGGLE TABS ─────────────────────────────────────── -->
+        <div class="auth-toggle">
+          <button type="button" class="auth-toggle-btn active" id="tabLoginBtn">
+            <span class="atb-icon">🔓</span> Ingresar
+          </button>
+          <button type="button" class="auth-toggle-btn" id="tabRegisterBtn">
+            <span class="atb-icon">✨</span> Crear cuenta
+          </button>
         </div>
 
-        <div id="registerView" class="hidden">
-          <div class="section-title-row">
-            <div>
-              <p class="section-kicker">Paso 1</p>
-              <h2>Registro de cliente</h2>
+        <!-- ── LOGIN VIEW ──────────────────────────────────────── -->
+        <div id="loginView" class="auth-form-card">
+          <p class="auth-form-greeting">Bienvenido de vuelta 🍕</p>
+          <form id="loginFormClient" class="auth-form" autocomplete="on">
+
+            <div class="auth-input-group">
+              <span class="aig-icon">👤</span>
+              <input type="text" id="loginUser" autocomplete="username"
+                required placeholder="Tu nombre de usuario" />
             </div>
-          </div>
-          <p class="helper-text">Crea tu usuario para guardar direcciones y ver tu historial en vivo.</p>
-          <form id="profileForm" class="grid-form narrow-form">
-            <label class="full-width">
-              Crea un usuario
-              <input type="text" id="regUser" required placeholder="Ej. jperez" />
-            </label>
-            <label class="full-width">
-              Crea una contraseña
-              <input type="password" id="regPass" required placeholder="Mín. 4 caracteres" minlength="4" />
-            </label>
-            <label class="full-width" style="margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px;">
-              Nombre completo
-              <input type="text" id="name" required placeholder="Ej. Jeferson" />
-            </label>
-            <label class="full-width">
-              Número de WhatsApp
-              <input type="tel" id="regPhone" required placeholder="Ej. 3001234567" />
-            </label>
-            <label>
-              Conjunto/Barrio
-              <input type="text" id="complex" required placeholder="Ej. Mirador del Lago" />
-            </label>
-            <label>
-              Torre
-              <input type="text" id="tower" required placeholder="Ej. Torre 3" />
-            </label>
-            <label>
-              Apartamento
-              <input type="text" id="apartment" required placeholder="Ej. 504" />
-            </label>
-            <div class="form-actions full-width wizard-actions-row">
-              <button type="submit" class="primary-btn">Registrarme y ordenar</button>
+
+            <div class="auth-input-group">
+              <span class="aig-icon">🔒</span>
+              <input type="password" id="loginPass" autocomplete="current-password"
+                required placeholder="Tu contraseña" />
+              <button type="button" class="aig-eye" data-target="loginPass" title="Mostrar/ocultar">👁️</button>
             </div>
+
+            <button type="submit" class="auth-submit-btn" id="loginSubmitBtn">
+              <span>Ingresar y ordenar</span>
+              <span class="asb-arrow">→</span>
+            </button>
           </form>
+
+          <p class="auth-switch-hint">
+            ¿Primera vez aquí?
+            <button type="button" class="auth-link-btn" id="switchToRegisterBtn">Crea tu cuenta gratis →</button>
+          </p>
         </div>
+
+        <!-- ── REGISTER VIEW ───────────────────────────────────── -->
+        <div id="registerView" class="auth-form-card hidden">
+          <p class="auth-form-greeting">Registro rápido — solo toma 1 minuto 🚀</p>
+
+          <!-- Step indicator chips -->
+          <div class="auth-reg-steps">
+            <span class="ars-chip active" data-reg-step="1">1 · Acceso</span>
+            <span class="ars-sep">›</span>
+            <span class="ars-chip" data-reg-step="2">2 · Datos</span>
+            <span class="ars-sep">›</span>
+            <span class="ars-chip" data-reg-step="3">3 · Dirección</span>
+          </div>
+
+          <form id="profileForm" class="auth-form" autocomplete="on">
+
+            <!-- SUB-STEP 1: Credentials -->
+            <div class="auth-sub-step active" id="regStep1">
+              <div class="auth-input-group">
+                <span class="aig-icon">👤</span>
+                <input type="text" id="regUser" autocomplete="username"
+                  required placeholder="Ej. jperez (sin espacios)" />
+              </div>
+              <div class="auth-input-group">
+                <span class="aig-icon">🔒</span>
+                <input type="password" id="regPass" autocomplete="new-password"
+                  required placeholder="Contraseña (mín. 4 caracteres)" minlength="4" />
+                <button type="button" class="aig-eye" data-target="regPass" title="Mostrar/ocultar">👁️</button>
+              </div>
+              <button type="button" class="auth-submit-btn" id="regNextBtn1">
+                Continuar <span class="asb-arrow">→</span>
+              </button>
+            </div>
+
+            <!-- SUB-STEP 2: Personal data -->
+            <div class="auth-sub-step hidden" id="regStep2">
+              <div class="auth-input-group">
+                <span class="aig-icon">😊</span>
+                <input type="text" id="name" autocomplete="given-name"
+                  required placeholder="Tu nombre completo" />
+              </div>
+              <div class="auth-input-group">
+                <span class="aig-icon">📱</span>
+                <input type="tel" id="regPhone" autocomplete="tel"
+                  required placeholder="Número WhatsApp (ej. 3001234567)" />
+              </div>
+              <div class="auth-nav-row">
+                <button type="button" class="auth-back-btn" id="regBackBtn1">← Volver</button>
+                <button type="button" class="auth-submit-btn" style="flex:2;" id="regNextBtn2">
+                  Continuar <span class="asb-arrow">→</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- SUB-STEP 3: Address -->
+            <div class="auth-sub-step hidden" id="regStep3">
+              <p class="auth-field-hint">📍 ¿Dónde te entregamos?</p>
+              <div class="auth-input-group">
+                <span class="aig-icon">🏘️</span>
+                <input type="text" id="complex" required placeholder="Conjunto / Barrio" />
+              </div>
+              <div class="auth-addr-cols">
+                <div class="auth-input-group">
+                  <span class="aig-icon">🏢</span>
+                  <input type="text" id="tower" required placeholder="Torre / Bloque" />
+                </div>
+                <div class="auth-input-group">
+                  <span class="aig-icon">🚪</span>
+                  <input type="text" id="apartment" required placeholder="Apto / Casa" />
+                </div>
+              </div>
+              <div class="auth-nav-row">
+                <button type="button" class="auth-back-btn" id="regBackBtn2">← Volver</button>
+                <button type="submit" class="auth-submit-btn" style="flex:2;" id="registerSubmitBtn">
+                  ¡Registrarme! 🎉 <span class="asb-arrow">→</span>
+                </button>
+              </div>
+            </div>
+
+          </form>
+
+          <p class="auth-switch-hint">
+            ¿Ya tienes cuenta?
+            <button type="button" class="auth-link-btn" id="switchToLoginBtn">Inicia sesión →</button>
+          </p>
+        </div>
+
+        <span class="pill hidden" id="profileStatus">Desconectado</span>
       </section>
+
 
       <section class="wizard-panel" data-step="2">
         <div class="section-title-row">

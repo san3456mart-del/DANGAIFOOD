@@ -167,6 +167,128 @@ th { color: var(--muted); font-size: .85rem; text-transform: uppercase; letter-s
 .tracker-step span { font-size: 0.75rem; color: var(--muted); font-weight: 600; text-align: center; }
 .tracker-step.active span { color: var(--text); }
 
+/* ─── AUTH SCREEN ───────────────────────────────────────────── */
+.auth-panel { padding: 0 !important; background: transparent !important; box-shadow: none !important; border: none !important; }
+
+/* Hero */
+.auth-hero {
+  text-align: center; padding: 32px 24px 20px;
+  background: linear-gradient(160deg, #fff8f5 0%, #fff 60%);
+  border-radius: 24px; margin-bottom: 16px;
+  border: 1px solid rgba(255,69,0,0.1);
+}
+.auth-hero-logo { margin-bottom: 12px; }
+.auth-hero-title { margin: 0 0 6px; font-size: 1.5rem; font-weight: 800; color: var(--secondary); }
+.auth-hero-sub { margin: 0; font-size: 0.92rem; color: var(--muted); line-height: 1.5; }
+
+/* Toggle */
+.auth-toggle {
+  display: flex; gap: 6px; padding: 5px; background: #f1f2f5;
+  border-radius: 16px; margin-bottom: 16px;
+}
+.auth-toggle-btn {
+  flex: 1; padding: 12px; border-radius: 12px; border: none; cursor: pointer;
+  font-size: 0.95rem; font-weight: 700; color: var(--muted); background: transparent;
+  font-family: inherit; transition: all .22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.auth-toggle-btn.active {
+  background: #fff; color: var(--primary);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+}
+.atb-icon { font-size: 1.05rem; }
+
+/* Card */
+.auth-form-card {
+  background: #fff; border-radius: 24px; padding: 24px;
+  border: 1px solid var(--line); box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+  animation: fadeIn .25s ease;
+}
+.auth-form-greeting {
+  margin: 0 0 20px; font-size: 1rem; font-weight: 700; color: var(--secondary);
+  padding-bottom: 14px; border-bottom: 1px solid var(--line);
+}
+.auth-form { display: flex; flex-direction: column; gap: 12px; }
+
+/* Input group */
+.auth-input-group {
+  display: flex; align-items: center; gap: 10px;
+  background: #f9fafb; border: 1.5px solid var(--line);
+  border-radius: 14px; padding: 0 14px; transition: border-color .2s, box-shadow .2s;
+}
+.auth-input-group:focus-within {
+  border-color: var(--primary); background: #fff;
+  box-shadow: 0 0 0 3px rgba(255,69,0,0.1);
+}
+.aig-icon { font-size: 1.1rem; flex-shrink: 0; }
+.auth-input-group input {
+  flex: 1; border: none; background: transparent; padding: 15px 0;
+  font-size: 0.97rem; color: var(--text); outline: none;
+  box-shadow: none !important;
+}
+.auth-input-group input:focus { box-shadow: none !important; border: none !important; }
+.aig-eye {
+  background: none; border: none; cursor: pointer; padding: 0;
+  font-size: 1rem; color: var(--muted); flex-shrink: 0; line-height: 1;
+  opacity: 0.7; transition: opacity .15s;
+}
+.aig-eye:hover { opacity: 1; }
+
+/* Submit button */
+.auth-submit-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 16px; border-radius: 14px; border: none;
+  background: var(--primary); color: #fff; font-size: 1.02rem; font-weight: 800;
+  cursor: pointer; font-family: inherit;
+  box-shadow: 0 6px 18px rgba(255,69,0,0.3);
+  transition: transform .15s, box-shadow .15s, background .15s;
+}
+.auth-submit-btn:hover { background: #e03d00; transform: translateY(-1px); box-shadow: 0 8px 22px rgba(255,69,0,0.35); }
+.auth-submit-btn:active { transform: translateY(0); }
+.auth-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.asb-arrow { font-size: 1.1rem; transition: transform .15s; }
+.auth-submit-btn:hover .asb-arrow { transform: translateX(4px); }
+
+/* Switch hint */
+.auth-switch-hint {
+  text-align: center; margin: 16px 0 0; font-size: 0.88rem; color: var(--muted);
+}
+.auth-link-btn {
+  background: none; border: none; cursor: pointer; color: var(--primary);
+  font-weight: 700; font-size: 0.88rem; padding: 0; font-family: inherit;
+  text-decoration: underline;
+}
+
+/* Register step chips */
+.auth-reg-steps {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.ars-chip {
+  padding: 5px 12px; border-radius: 999px; font-size: 0.78rem; font-weight: 700;
+  background: #f1f2f5; color: var(--muted); transition: .2s;
+}
+.ars-chip.active { background: rgba(255,69,0,0.1); color: var(--primary); }
+.ars-sep { color: var(--muted); font-size: 0.9rem; }
+
+/* Sub-steps */
+.auth-sub-step { display: flex; flex-direction: column; gap: 12px; }
+.auth-sub-step.hidden { display: none !important; }
+.auth-sub-step.active { animation: fadeIn .22s ease; }
+
+/* Nav row */
+.auth-nav-row { display: flex; gap: 10px; }
+.auth-back-btn {
+  flex: 1; padding: 14px; border-radius: 14px; border: 1.5px solid var(--line);
+  background: #f9fafb; color: var(--muted); font-weight: 700; cursor: pointer;
+  font-family: inherit; font-size: 0.92rem; transition: .15s;
+}
+.auth-back-btn:hover { background: #e5e7eb; color: var(--secondary); }
+
+/* Address columns */
+.auth-addr-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.auth-field-hint { margin: 0 0 4px; font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+
 /* ─── ORDER CARDS (Admin Real-Time) ─────────────────────────── */
 .oc-card {
   background: #fff; border-radius: 20px; overflow: hidden;

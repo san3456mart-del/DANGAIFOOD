@@ -443,20 +443,87 @@ async function submitOrder() {
   }
 }
 
+// ─── AUTH UI LOGIC ─────────────────────────────────────────────
+function showLogin() {
+  tabLoginBtn.classList.add('active');
+  tabRegisterBtn.classList.remove('active');
+  loginView.classList.remove('hidden');
+  registerView.classList.add('hidden');
+}
+function showRegister() {
+  tabRegisterBtn.classList.add('active');
+  tabLoginBtn.classList.remove('active');
+  registerView.classList.remove('hidden');
+  loginView.classList.add('hidden');
+  goRegStep(1);
+}
+
 if (tabLoginBtn && tabRegisterBtn) {
-  tabLoginBtn.addEventListener('click', () => {
-    tabLoginBtn.classList.add('active');
-    tabRegisterBtn.classList.remove('active');
-    loginView.classList.remove('hidden');
-    registerView.classList.add('hidden');
+  tabLoginBtn.addEventListener('click', showLogin);
+  tabRegisterBtn.addEventListener('click', showRegister);
+}
+
+// Cross-links
+const switchToRegisterBtn = document.getElementById('switchToRegisterBtn');
+const switchToLoginBtn    = document.getElementById('switchToLoginBtn');
+if (switchToRegisterBtn) switchToRegisterBtn.addEventListener('click', showRegister);
+if (switchToLoginBtn)    switchToLoginBtn.addEventListener('click', showLogin);
+
+// Password toggle (eye icons)
+document.querySelectorAll('.aig-eye').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = document.getElementById(btn.dataset.target);
+    if (!target) return;
+    if (target.type === 'password') {
+      target.type = 'text';
+      btn.textContent = '🙈';
+    } else {
+      target.type = 'password';
+      btn.textContent = '👁️';
+    }
   });
-  tabRegisterBtn.addEventListener('click', () => {
-    tabRegisterBtn.classList.add('active');
-    tabLoginBtn.classList.remove('active');
-    registerView.classList.remove('hidden');
-    loginView.classList.add('hidden');
+});
+
+// Registration sub-steps
+function setRegChipActive(step) {
+  document.querySelectorAll('.ars-chip').forEach(c =>
+    c.classList.toggle('active', Number(c.dataset.regStep) === step));
+}
+function goRegStep(step) {
+  [1, 2, 3].forEach(n => {
+    const el = document.getElementById(`regStep${n}`);
+    if (el) { el.classList.toggle('hidden', n !== step); el.classList.toggle('active', n === step); }
+  });
+  setRegChipActive(step);
+}
+
+const regNextBtn1 = document.getElementById('regNextBtn1');
+const regNextBtn2 = document.getElementById('regNextBtn2');
+const regBackBtn1 = document.getElementById('regBackBtn1');
+const regBackBtn2 = document.getElementById('regBackBtn2');
+
+if (regNextBtn1) {
+  regNextBtn1.addEventListener('click', () => {
+    const user = document.getElementById('regUser')?.value.trim();
+    const pass = document.getElementById('regPass')?.value.trim();
+    if (!user) return toastMessage('Ingresa un nombre de usuario.');
+    if (/\s/.test(user)) return toastMessage('El usuario no puede tener espacios.');
+    if (!pass || pass.length < 4) return toastMessage('La contraseña debe tener mínimo 4 caracteres.');
+    goRegStep(2);
   });
 }
+if (regNextBtn2) {
+  regNextBtn2.addEventListener('click', () => {
+    const name  = document.getElementById('name')?.value.trim();
+    const phone = document.getElementById('regPhone')?.value.trim();
+    if (!name) return toastMessage('Ingresa tu nombre completo.');
+    if (!phone || !/^\d{7,12}$/.test(phone.replace(/\D/g,''))) return toastMessage('Ingresa un número de WhatsApp válido (7-12 dígitos).');
+    goRegStep(3);
+  });
+}
+if (regBackBtn1) regBackBtn1.addEventListener('click', () => goRegStep(1));
+if (regBackBtn2) regBackBtn2.addEventListener('click', () => goRegStep(2));
+
 
 // Read users from Firebase with a timeout fallback to localStorage
 async function readUsersSafe() {
