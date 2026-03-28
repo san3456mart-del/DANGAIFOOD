@@ -54,11 +54,13 @@
     </section>
 
     <section class="admin-panel hidden" id="adminPanel">
-      <div class="stats-grid">
+      <div class="stats-grid stats-grid-6">
         <article class="card stat-card"><span>Pedidos activos</span><strong id="activeOrdersCount">0</strong></article>
         <article class="card stat-card"><span>Ventas entregadas</span><strong id="deliveredOrdersCount">0</strong></article>
-        <article class="card stat-card"><span>Ingresos</span><strong id="incomeValue">$0</strong></article>
-        <article class="card stat-card"><span>Ganancia estimada</span><strong id="profitValue">$0</strong></article>
+        <article class="card stat-card stat-card--income"><span>💵 Ingresos totales</span><strong id="incomeValue">$0</strong></article>
+        <article class="card stat-card stat-card--profit"><span>📊 Ganancia estimada (30%)</span><strong id="profitValue">$0</strong></article>
+        <article class="card stat-card stat-card--cash"><span>💰 Ventas en efectivo</span><strong id="cashIncomeValue">$0</strong></article>
+        <article class="card stat-card stat-card--digital"><span>📱 Ventas digitales</span><strong id="digitalIncomeValue">$0</strong></article>
       </div>
 
       <div class="tabs">
@@ -332,13 +334,38 @@
             <!-- Arqueo de Caja (user input) -->
             <div class="card cr-arqueo-card">
               <p class="section-kicker">Arqueo</p>
-              <h2 style="font-size:1.15rem;margin:4px 0 16px;">🏦 Conteo de Efectivo</h2>
+              <h2 style="font-size:1.15rem;margin:4px 0 16px;">🏦 Conteo de Ingresos</h2>
+
               <label style="display:flex;flex-direction:column;gap:6px;">
-                <span style="font-size:0.85rem;font-weight:700;color:var(--muted);">Efectivo contado físicamente ($)</span>
+                <span style="font-size:0.85rem;font-weight:700;color:var(--muted);">💵 Efectivo contado físicamente ($)</span>
                 <input type="number" id="cashCountInput" min="0" step="100" placeholder="Ej. 75000"
-                  style="border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;font-size:1.25rem;font-weight:800;color:var(--secondary);background:#fff;outline:none;text-align:right;" />
+                  style="border:1.5px solid #16a34a;border-radius:14px;padding:14px 16px;font-size:1.25rem;font-weight:800;color:var(--secondary);background:#f0fdf4;outline:none;text-align:right;" />
               </label>
-              <p class="helper-text" style="margin-top:8px;">Ingresa el total de billetes y monedas que tienes en caja. Se comparará con el efectivo esperado de pedidos pagados en efectivo.</p>
+
+              <label style="display:flex;flex-direction:column;gap:6px;margin-top:14px;">
+                <span style="font-size:0.85rem;font-weight:700;color:var(--muted);">📱 Transferencias recibidas — QR / Bre-B ($)</span>
+                <input type="number" id="transferCountInput" min="0" step="100" placeholder="Ej. 55500"
+                  style="border:1.5px solid #4f46e5;border-radius:14px;padding:14px 16px;font-size:1.25rem;font-weight:800;color:var(--secondary);background:#f0f0ff;outline:none;text-align:right;" />
+              </label>
+
+              <!-- Combined total live display -->
+              <div id="arqueoTotalBox" class="arqueo-total-box">
+                <div class="atb-row">
+                  <span>💵 Efectivo</span><strong id="atbCash">$0</strong>
+                </div>
+                <div class="atb-row">
+                  <span>📱 Transferencias</span><strong id="atbDigital">$0</strong>
+                </div>
+                <div class="atb-divider"></div>
+                <div class="atb-row atb-total">
+                  <span>Total recibido</span><strong id="atbTotal">$0</strong>
+                </div>
+                <div class="atb-row atb-diff">
+                  <span>Diferencia con ventas</span><strong id="atbDiff">$0</strong>
+                </div>
+              </div>
+
+              <p class="helper-text" style="margin-top:12px;">El total recibido (efectivo + transferencias) debe coincidir con los ingresos del día.</p>
 
               <label style="display:flex;flex-direction:column;gap:6px;margin-top:16px;">
                 <span style="font-size:0.85rem;font-weight:700;color:var(--muted);">Observaciones del cierre (opcional)</span>

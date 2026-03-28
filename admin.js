@@ -401,12 +401,20 @@ function renderDashboard() {
   const orders = getOrders();
   const active = orders.filter((o) => o.status !== 'entregado').length;
   const delivered = orders.filter((o) => o.status === 'entregado');
-  const totalIncome = delivered.reduce((sum, o) => sum + Number(o.total || 0), 0);
-  const totalProfit = Math.round(totalIncome * (cfg.profitRate || 0.30));
-  activeOrdersCount.textContent = active;
+  const totalIncome   = delivered.reduce((sum, o) => sum + Number(o.total || 0), 0);
+  const cashIncome    = delivered.filter(o => o.paymentMethod === 'efectivo').reduce((sum, o) => sum + Number(o.total || 0), 0);
+  const digitalIncome = totalIncome - cashIncome;
+  const totalProfit   = Math.round(totalIncome * (cfg.profitRate || 0.30));
+
+  activeOrdersCount.textContent    = active;
   deliveredOrdersCount.textContent = delivered.length;
-  incomeValue.textContent = money(totalIncome);
-  profitValue.textContent = money(totalProfit);
+  incomeValue.textContent          = money(totalIncome);
+  profitValue.textContent          = money(totalProfit);
+
+  const cashEl    = document.getElementById('cashIncomeValue');
+  const digitalEl = document.getElementById('digitalIncomeValue');
+  if (cashEl)    cashEl.textContent    = money(cashIncome);
+  if (digitalEl) digitalEl.textContent = money(digitalIncome);
 }
 
 function renderPendingPayments() {
@@ -908,6 +916,7 @@ const expenseCat         = document.getElementById('expenseCat');
 const expensesList       = document.getElementById('expensesList');
 const cashSummaryBox     = document.getElementById('cashSummaryBox');
 const cashCountInput     = document.getElementById('cashCountInput');
+const transferCountInput = document.getElementById('transferCountInput');
 const closeCashBtn       = document.getElementById('closeCashBtn');
 const cashHistoryList    = document.getElementById('cashHistoryList');
 
@@ -1061,7 +1070,9 @@ function _renderCashHistory() {
     return;
   }
   cashHistoryList.innerHTML = counts.map(c => {
-    const diffColor = c.cashDifference > 0 ? 'var(--success)' : c.cashDifference < 0 ? 'var(--danger)' : 'var(--muted)';
+    const totalReceived = (c.totalReceived ?? (c.cashCounted + (c.transferCounted || 0)));
+    const diff     = c.cashDifference;
+    const diffColor = diff > 0 ? 'var(--success)' : diff < 0 ? 'var(--danger)' : 'var(--muted)';
     return `
     <div class="cr-history-card">
       <div class="chc-header">
@@ -1069,15 +1080,16 @@ function _renderCashHistory() {
         <span class="chc-time">${new Date(c.closedAt).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</span>
       </div>
       <div class="chc-grid">
-        <div class="chc-item"><span>Ventas</span><strong>${money(c.totalSales)}</strong></div>
-        <div class="chc-item"><span>Efectivo</span><strong>${money(c.cashSales)}</strong></div>
-        <div class="chc-item"><span>Digital</span><strong>${money(c.digitalSales)}</strong></div>
+        <div class="chc-item"><span>Ventas totales</span><strong>${money(c.totalSales)}</strong></div>
+        <div class="chc-item"><span>💵 Efectivo (esperado)</span><strong>${money(c.cashSales)}</strong></div>
+        <div class="chc-item"><span>📱 Digital (esperado)</span><strong>${money(c.digitalSales)}</strong></div>
+        <div class="chc-item"><span>💵 Efectivo contado</span><strong>${money(c.cashCounted)}</strong></div>
+        <div class="chc-item"><span>📱 Transferencias contadas</span><strong>${money(c.transferCounted || 0)}</strong></div>
+        <div class="chc-item"><span>Total recibido</span><strong>${money(totalReceived)}</strong></div>
         <div class="chc-item"><span>Gastos</span><strong style="color:var(--danger)">${money(c.totalExpenses)}</strong></div>
         <div class="chc-item"><span>Ganancia bruta (30%)</span><strong style="color:var(--success)">${money(c.grossProfit)}</strong></div>
         <div class="chc-item"><span>Ganancia neta</span><strong style="color:${c.netProfit >= 0 ? 'var(--success)' : 'var(--danger)'}">${money(c.netProfit)}</strong></div>
-        <div class="chc-item"><span>Esperado en caja</span><strong>${money(c.cashSales)}</strong></div>
-        <div class="chc-item"><span>Contado en caja</span><strong>${money(c.cashCounted)}</strong></div>
-        <div class="chc-item ${c.cashDifference !== 0 ? 'chc-highlight' : ''}"><span>Diferencia</span><strong style="color:${diffColor}">${c.cashDifference >= 0 ? '+' : ''}${money(c.cashDifference)}</strong></div>
+        <div class="chc-item ${diff !== 0 ? 'chc-highlight' : ''}"><span>Diferencia arqueo</span><strong style="color:${diffColor}">${diff >= 0 ? '+' : ''}${money(diff)}</strong></div>
         ${c.notes ? `<div class="chc-item full"><span>Notas</span><em>${escapeHTML(c.notes)}</em></div>` : ''}
       </div>
       <div class="chc-footer">
@@ -1124,10 +1136,39 @@ if (expenseForm) {
   });
 }
 
+// Live arqueo box updater
+function _updateArqueoBox() {
+  const cash     = Number(cashCountInput?.value   || 0);
+  const transfer = Number(transferCountInput?.value || 0);
+  const total    = cash + transfer;
+  const expected = Number(cashSummaryBox?.dataset?.totalSales || 0);
+  const diff     = total - expected;
+  const diffColor = diff > 0 ? 'var(--success)' : diff < 0 ? 'var(--danger)' : 'var(--muted)';
+
+  const atbCash    = document.getElementById('atbCash');
+  const atbDigital = document.getElementById('atbDigital');
+  const atbTotal   = document.getElementById('atbTotal');
+  const atbDiff    = document.getElementById('atbDiff');
+  if (atbCash)    atbCash.textContent    = money(cash);
+  if (atbDigital) atbDigital.textContent = money(transfer);
+  if (atbTotal)   { atbTotal.textContent = money(total); atbTotal.style.color = 'var(--secondary)'; }
+  if (atbDiff)    { atbDiff.textContent  = (diff >= 0 ? '+' : '') + money(diff); atbDiff.style.color = diffColor; }
+
+  const box = document.getElementById('arqueoTotalBox');
+  if (box) box.classList.toggle('arqueo-ok', diff === 0 && total > 0);
+}
+
 if (cashCountInput) {
   cashCountInput.addEventListener('input', () => {
     const date = cashDateInput?.value || todayStr();
     _renderDaySummary(date);
+    _updateArqueoBox();
+  });
+}
+
+if (transferCountInput) {
+  transferCountInput.addEventListener('input', () => {
+    _updateArqueoBox();
   });
 }
 
@@ -1138,28 +1179,38 @@ if (closeCashBtn) {
     if (!ds || !Number(ds.ordersCount)) return showToast('No hay pedidos entregados en este día para cerrar.');
     if (!confirm(`¿Cerrar la caja del ${date}? Esta acción guarda el registro permanentemente.`)) return;
 
-    const notesEl = document.getElementById('cashClosingNotes');
+    const notesEl       = document.getElementById('cashClosingNotes');
+    const cashCounted   = Number(cashCountInput?.value    || 0);
+    const transferCounted = Number(transferCountInput?.value || 0);
+    const totalReceived = cashCounted + transferCounted;
+    const totalSales    = Number(ds.totalSales || 0);
+    const totalDiff     = totalReceived - totalSales;
+
     const record = {
-      id:            `close-${Date.now()}`,
+      id:              `close-${Date.now()}`,
       date,
-      totalSales:    Number(ds.totalSales    || 0),
-      cashSales:     Number(ds.cashSales     || 0),
-      digitalSales:  Number(ds.digitalSales  || 0),
-      grossProfit:   Number(ds.grossProfit   || 0),
-      totalExpenses: Number(ds.totalExpenses || 0),
-      netProfit:     Number(ds.netProfit     || 0),
-      cashCounted:   Number(cashCountInput?.value || 0),
-      cashDifference: Number(cashCountInput?.value || 0) - Number(ds.cashSales || 0),
-      ordersCount:   Number(ds.ordersCount   || 0),
-      notes:         notesEl?.value.trim() || '',
-      closedAt:      new Date().toISOString()
+      totalSales,
+      cashSales:       Number(ds.cashSales     || 0),
+      digitalSales:    Number(ds.digitalSales  || 0),
+      grossProfit:     Number(ds.grossProfit   || 0),
+      totalExpenses:   Number(ds.totalExpenses || 0),
+      netProfit:       Number(ds.netProfit     || 0),
+      cashCounted,
+      transferCounted,
+      totalReceived,
+      cashDifference:  totalDiff,
+      ordersCount:     Number(ds.ordersCount   || 0),
+      notes:           notesEl?.value.trim() || '',
+      closedAt:        new Date().toISOString()
     };
 
     const counts = getCashCounts();
     counts.push(record);
     saveCashCounts(counts);
-    if (cashCountInput) cashCountInput.value = '';
-    if (notesEl) notesEl.value = '';
+    if (cashCountInput)    cashCountInput.value    = '';
+    if (transferCountInput) transferCountInput.value = '';
+    if (notesEl)           notesEl.value = '';
+    _updateArqueoBox();
     renderCashRegister();
     showToast(`✅ Caja del ${date} cerrada y guardada.`);
   });

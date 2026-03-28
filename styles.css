@@ -1084,3 +1084,102 @@ th { color: var(--muted); font-size: .85rem; text-transform: uppercase; letter-s
   .chc-item:nth-child(3n) { border-right: 1px solid var(--line); }
   .chc-item:nth-child(2n) { border-right: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   STATS GRID — 6 TARJETAS CON COLORES
+═══════════════════════════════════════════════════════════════ */
+.stats-grid-6 {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+@media (max-width: 1100px) { .stats-grid-6 { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 700px)  { .stats-grid-6 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 440px)  { .stats-grid-6 { grid-template-columns: 1fr; } }
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 18px;
+  border-radius: 18px;
+}
+.stat-card span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.stat-card strong {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--secondary);
+}
+
+/* Colored variants */
+.stat-card--income {
+  background: linear-gradient(135deg, rgba(255,69,0,0.06) 0%, rgba(255,107,53,0.02) 100%);
+  border-color: rgba(255,69,0,0.15) !important;
+}
+.stat-card--income strong { color: var(--primary); }
+
+.stat-card--profit {
+  background: linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(16,185,129,0.02) 100%);
+  border-color: rgba(16,185,129,0.2) !important;
+}
+.stat-card--profit strong { color: var(--success); }
+
+.stat-card--cash {
+  background: linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.02) 100%);
+  border-color: rgba(34,197,94,0.2) !important;
+}
+.stat-card--cash strong { color: #16a34a; }
+
+.stat-card--digital {
+  background: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(99,102,241,0.02) 100%);
+  border-color: rgba(99,102,241,0.2) !important;
+}
+.stat-card--digital strong { color: #4f46e5; }
+
+/* ═══════════════════════════════════════════════════════════════
+   ARQUEO TOTAL BOX
+═══════════════════════════════════════════════════════════════ */
+.arqueo-total-box {
+  background: #f8faff;
+  border: 1.5px solid var(--line);
+  border-radius: 16px;
+  padding: 16px 18px;
+  margin-top: 18px;
+  transition: border-color .25s, box-shadow .25s;
+}
+.arqueo-total-box.arqueo-ok {
+  border-color: #16a34a;
+  background: #f0fdf4;
+  box-shadow: 0 0 0 3px rgba(22,163,74,0.12);
+}
+.atb-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+.atb-row strong {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--secondary);
+}
+.atb-divider {
+  height: 1.5px;
+  background: var(--line);
+  margin: 8px 0;
+  border-radius: 99px;
+}
+.atb-total span { font-weight: 800; color: var(--secondary); font-size: 0.95rem; }
+.atb-total strong { font-size: 1.2rem; }
+.atb-diff span { font-size: 0.82rem; color: var(--muted); font-weight: 600; }
+.atb-diff strong { font-size: 1rem; }
