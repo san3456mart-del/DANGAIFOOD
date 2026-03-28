@@ -232,9 +232,10 @@
                 <th>Nombre</th>
                 <th>Usuario</th>
                 <th>WhatsApp</th>
-                <th>Conjunto/Barrio</th>
-                <th>Torre</th>
+                <th>Dirección</th>
                 <th>Apto</th>
+                <th style="text-align:center;">Cupones</th>
+                <th style="text-align:center;">Acción</th>
               </tr>
             </thead>
             <tbody id="customersTableBody"></tbody>
@@ -246,6 +247,51 @@
   </main>
 
   <div id="toast" class="toast"></div>
+
+  <!-- COUPON MODAL -->
+  <div id="couponModalOverlay" class="coupon-modal-overlay hidden">
+    <div class="coupon-modal">
+      <h3>🎟️ Enviar cupón de descuento</h3>
+      <p class="modal-sub" id="couponModalClientName">Para: Cliente</p>
+
+      <div class="modal-form">
+        <label>
+          Tipo de descuento
+          <select id="couponTypeInput" style="border:1px solid var(--line);background:#f9fafb;border-radius:14px;padding:16px;color:var(--text);outline:none;font-size:1rem;">
+            <option value="fixed">💵 Valor fijo (ej. $5.000)</option>
+            <option value="percent">% Porcentaje (ej. 15%)</option>
+          </select>
+        </label>
+        <label>
+          <span id="couponValueLabel">Valor del descuento ($)</span>
+          <input type="number" id="couponValueInput" min="1" step="100" placeholder="Ej. 5000" />
+        </label>
+        <label>
+          Vence el (fecha y hora)
+          <input type="datetime-local" id="couponExpiryInput" />
+        </label>
+        <label>
+          Descripción (opcional)
+          <input type="text" id="couponDescInput" placeholder="Ej. ¡Gracias por tu fidelidad!" maxlength="60" />
+        </label>
+
+        <div id="couponPreviewBox" class="coupon-preview">
+          <div class="cp-left">
+            <span class="cp-badge">Cupón Dangai Food</span>
+            <span class="cp-amount" id="cpPreviewAmount">$5.000</span>
+            <span class="cp-name" id="cpPreviewDesc">Descuento especial</span>
+            <span class="cp-expiry" id="cpPreviewExpiry">Vence: —</span>
+          </div>
+          <span class="cp-icon">🎟️</span>
+        </div>
+      </div>
+
+      <div class="coupon-modal-actions">
+        <button class="ghost-btn" id="couponModalCancelBtn">Cancelar</button>
+        <button class="primary-btn" id="couponModalSendBtn">✅ Enviar cupón</button>
+      </div>
+    </div>
+  </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>

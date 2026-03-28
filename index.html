@@ -165,7 +165,14 @@
         <div class="summary-box">
           <div><span>Subtotal</span><strong id="subtotalValue">$0</strong></div>
           <div><span>Domicilio</span><strong id="deliveryValue">$0</strong></div>
+          <div id="discountLine" class="hidden"><span>Descuento cupón 🎟️</span><strong id="discountValue" class="summary-discount">-$0</strong></div>
           <div class="summary-total"><span>Total</span><strong id="totalValue">$0</strong></div>
+        </div>
+
+        <!-- COUPON SECTION -->
+        <div id="couponSection" class="coupon-section hidden">
+          <h4>🎟️ Tus cupones disponibles</h4>
+          <div id="couponCards" class="coupon-cards"></div>
         </div>
 
         <form id="paymentForm" style="margin-bottom: 20px; display: grid; gap: 12px;">

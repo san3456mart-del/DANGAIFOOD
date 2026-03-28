@@ -362,27 +362,69 @@ function renderPendingPayments() {
 function renderCustomers() {
   if (!customersTableBody) return;
   const users = getJson(storage.users, []);
+  const coupons = getJson('restaurant_coupons_v2', {});
   if (customersCount) customersCount.textContent = `${users.length} clientes`;
-  
+
   if (!users.length) {
-    customersTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Aún no hay clientes registrados.</td></tr>';
+    customersTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Aún no hay clientes registrados.</td></tr>';
     return;
   }
 
-  customersTableBody.innerHTML = users.map(user => `
-    <tr>
-      <td><strong>${escapeHTML(user.name)}</strong></td>
-      <td>${escapeHTML(user.username)}</td>
-      <td>
-        ${user.phone 
-          ? `<a href="https://wa.me/57${user.phone.replace(/\D/g, '')}" target="_blank" style="color:var(--primary); font-weight:bold; text-decoration:underline;">💬 ${escapeHTML(user.phone)}</a>` 
-          : '<span style="color:var(--muted)">Sin teléfono</span>'}
-      </td>
-      <td>${escapeHTML(user.complex)}</td>
-      <td>${escapeHTML(user.tower)}</td>
-      <td>${escapeHTML(user.apartment)}</td>
-    </tr>
-  `).join('');
+  customersTableBody.innerHTML = users.map(user => {
+    const userCoupons = coupons[user.clientId] || [];
+    const now = Date.now();
+    const activeCoupons = userCoupons.filter(c => new Date(c.expiresAt).getTime() > now);
+    const expiredCount = userCoupons.length - activeCoupons.length;
+
+    const couponChips = userCoupons.length
+      ? userCoupons.map(c => {
+          const isExpired = new Date(c.expiresAt).getTime() <= now;
+          return `<span class="coupon-chip ${isExpired ? 'expired' : ''}" title="Vence: ${new Date(c.expiresAt).toLocaleString('es-CO')}">
+            ${c.type === 'percent' ? `${c.value}% OFF` : `$${Number(c.value).toLocaleString('es-CO')}`}
+            ${isExpired ? '⌛' : '✅'}
+            <button class="chip-del" data-delete-coupon="${c.id}" data-client-id="${user.clientId}" title="Eliminar cupón">×</button>
+          </span>`;
+        }).join('')
+      : '<span style="color:var(--muted);font-size:0.82rem;">Sin cupones</span>';
+
+    return `
+      <tr>
+        <td><strong>${escapeHTML(user.name)}</strong></td>
+        <td>${escapeHTML(user.username)}</td>
+        <td>
+          ${user.phone
+            ? `<a href="https://wa.me/57${user.phone.replace(/\D/g, '')}" target="_blank" style="color:var(--primary);font-weight:bold;text-decoration:underline;">&#128172; ${escapeHTML(user.phone)}</a>`
+            : '<span style="color:var(--muted)">Sin teléfono</span>'}
+        </td>
+        <td>${escapeHTML(user.complex)}, ${escapeHTML(user.tower)}</td>
+        <td>${escapeHTML(user.apartment)}</td>
+        <td style="text-align:center;">
+          <div class="customer-row-coupons">${couponChips}</div>
+        </td>
+        <td style="text-align:center;">
+          <button class="mini-btn" style="background:linear-gradient(135deg,rgba(255,69,0,0.1),rgba(255,107,53,0.06));color:var(--primary);border:1px solid rgba(255,69,0,0.2);border-radius:12px;padding:8px 14px;white-space:nowrap;"
+            data-send-coupon-client-id="${user.clientId}"
+            data-send-coupon-client-name="${escapeHTML(user.name)}">
+            🎟️ Enviar cupón
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  // Delete coupon chips
+  customersTableBody.querySelectorAll('[data-delete-coupon]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const { deleteCoupon, clientId } = btn.dataset;
+      deleteCouponForClient(clientId, deleteCoupon === 'true' ? btn.dataset.deleteCoupon : btn.dataset.deleteCoupon);
+    });
+  });
+
+  // Send coupon buttons
+  customersTableBody.querySelectorAll('[data-send-coupon-client-id]').forEach(btn => {
+    btn.addEventListener('click', () => openCouponModal(btn.dataset.sendCouponClientId, btn.dataset.sendCouponClientName));
+  });
 }
 
 function renderAll() {
@@ -536,6 +578,106 @@ window.addEventListener('storage', renderAll);
 setInterval(() => {
   if (localStorage.getItem(storage.adminSession) === 'true') renderAll();
 }, 2500);
+
+/* ─── COUPON SYSTEM LOGIC ─────────────────────────────────────── */
+const couponModal = document.getElementById('couponModalOverlay');
+const couponModalClientName = document.getElementById('couponModalClientName');
+const couponTypeInput = document.getElementById('couponTypeInput');
+const couponValueInput = document.getElementById('couponValueInput');
+const couponExpiryInput = document.getElementById('couponExpiryInput');
+const couponDescInput = document.getElementById('couponDescInput');
+const cpPreviewAmount = document.getElementById('cpPreviewAmount');
+const cpPreviewDesc = document.getElementById('cpPreviewDesc');
+const cpPreviewExpiry = document.getElementById('cpPreviewExpiry');
+const couponValueLabel = document.getElementById('couponValueLabel');
+
+let _couponTargetClientId = null;
+
+function openCouponModal(clientId, clientName) {
+  _couponTargetClientId = clientId;
+  couponModalClientName.textContent = `Para: ${clientName}`;
+
+  // Set default expiry to 7 days from now
+  const def = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  couponExpiryInput.value = def.toISOString().slice(0, 16);
+  couponValueInput.value = '';
+  couponDescInput.value = '';
+  couponTypeInput.value = 'fixed';
+  updateCouponLabel();
+  updateCouponPreview();
+  couponModal.classList.remove('hidden');
+}
+
+function closeCouponModal() {
+  couponModal.classList.add('hidden');
+  _couponTargetClientId = null;
+}
+
+function updateCouponLabel() {
+  couponValueLabel.textContent = couponTypeInput.value === 'percent'
+    ? 'Porcentaje de descuento (%)' : 'Valor del descuento ($)';
+}
+
+function updateCouponPreview() {
+  const val = Number(couponValueInput.value) || 0;
+  const type = couponTypeInput.value;
+  const desc = couponDescInput.value.trim() || 'Descuento especial';
+  const expiry = couponExpiryInput.value;
+
+  cpPreviewAmount.textContent = type === 'percent'
+    ? `${val}% OFF`
+    : `$${val.toLocaleString('es-CO')}`;
+  cpPreviewDesc.textContent = desc;
+  cpPreviewExpiry.textContent = expiry
+    ? `Vence: ${new Date(expiry).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}`
+    : 'Vence: —';
+}
+
+couponTypeInput.addEventListener('change', () => { updateCouponLabel(); updateCouponPreview(); });
+[couponValueInput, couponDescInput, couponExpiryInput].forEach(el => el.addEventListener('input', updateCouponPreview));
+
+function deleteCouponForClient(clientId, couponId) {
+  const coupons = getJson('restaurant_coupons_v2', {});
+  if (!coupons[clientId]) return;
+  coupons[clientId] = coupons[clientId].filter(c => c.id !== couponId);
+  setJson('restaurant_coupons_v2', coupons);
+  renderCustomers();
+  showToast('Cupón eliminado.');
+}
+
+document.getElementById('couponModalCancelBtn').addEventListener('click', closeCouponModal);
+couponModal.addEventListener('click', e => { if (e.target === couponModal) closeCouponModal(); });
+
+document.getElementById('couponModalSendBtn').addEventListener('click', () => {
+  const val = Number(couponValueInput.value);
+  const type = couponTypeInput.value;
+  const expiry = couponExpiryInput.value;
+  const desc = couponDescInput.value.trim() || 'Descuento especial';
+
+  if (!val || val <= 0) return showToast('Ingresa un valor válido para el cupón.');
+  if (!expiry) return showToast('Selecciona una fecha de vencimiento.');
+  if (type === 'percent' && (val < 1 || val > 100)) return showToast('El porcentaje debe estar entre 1 y 100.');
+  if (new Date(expiry).getTime() <= Date.now()) return showToast('La fecha de vencimiento debe ser en el futuro.');
+
+  const coupons = getJson('restaurant_coupons_v2', {});
+  if (!coupons[_couponTargetClientId]) coupons[_couponTargetClientId] = [];
+
+  const newCoupon = {
+    id: `CUP-${Date.now().toString().slice(-8)}`,
+    type,
+    value: val,
+    description: desc,
+    expiresAt: new Date(expiry).toISOString(),
+    createdAt: new Date().toISOString(),
+    redeemed: false
+  };
+
+  coupons[_couponTargetClientId].push(newCoupon);
+  setJson('restaurant_coupons_v2', coupons);
+  closeCouponModal();
+  renderCustomers();
+  showToast(`🎟️ Cupón enviado correctamente.`);
+});
 
 resetProductForm();
 checkSession();

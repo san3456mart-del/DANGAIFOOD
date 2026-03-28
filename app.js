@@ -49,6 +49,7 @@ let previousStep = 2;
 let activeSize = 'personal';
 let paymentMethod = 'efectivo';
 let paymentReceiptBase64 = null;
+let appliedCouponId = null;  // currently applied coupon ID
 
 const money = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(n || 0));
 const getJson = (key, fallback) => JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
@@ -219,6 +220,18 @@ function removeFromCart(lineId) {
   renderCart();
 }
 
+function getCouponDiscount(subtotal) {
+  if (!appliedCouponId) return 0;
+  const profile = getJson(storage.profile, null);
+  if (!profile) return 0;
+  const coupons = getJson('restaurant_coupons_v2', {});
+  const userCoupons = coupons[profile.clientId] || [];
+  const coupon = userCoupons.find(c => c.id === appliedCouponId);
+  if (!coupon || new Date(coupon.expiresAt).getTime() <= Date.now()) { appliedCouponId = null; return 0; }
+  if (coupon.type === 'percent') return Math.round(subtotal * coupon.value / 100);
+  return Math.min(coupon.value, subtotal);
+}
+
 function renderCart() {
   if (!cart.length) {
     cartItems.className = 'cart-items empty-state';
@@ -243,12 +256,76 @@ function renderCart() {
 
   const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
   const delivery = cart.length ? getDeliveryFee() : 0;
-  const total = subtotal + delivery;
+  const discount = getCouponDiscount(subtotal);
+  const total = subtotal + delivery - discount;
+
   cartCount.textContent = `${cart.length} items`;
   subtotalValue.textContent = money(subtotal);
   deliveryValue.textContent = money(delivery);
   totalValue.textContent = money(total);
+
+  const discountLine = document.getElementById('discountLine');
+  const discountValue = document.getElementById('discountValue');
+  if (discountLine && discountValue) {
+    if (discount > 0) {
+      discountLine.classList.remove('hidden');
+      discountValue.textContent = `-${money(discount)}`;
+    } else {
+      discountLine.classList.add('hidden');
+    }
+  }
+
   updateFloatingCart();
+  renderCoupons();
+}
+
+function renderCoupons() {
+  const profile = getJson(storage.profile, null);
+  const couponSection = document.getElementById('couponSection');
+  const couponCards = document.getElementById('couponCards');
+  if (!couponSection || !couponCards || !profile) return;
+
+  const coupons = getJson('restaurant_coupons_v2', {});
+  const userCoupons = (coupons[profile.clientId] || []).filter(c => !c.redeemed);
+  const now = Date.now();
+
+  if (!userCoupons.length) {
+    couponSection.classList.add('hidden');
+    return;
+  }
+  couponSection.classList.remove('hidden');
+
+  couponCards.innerHTML = userCoupons.map(c => {
+    const isExpired = new Date(c.expiresAt).getTime() <= now;
+    const isApplied = c.id === appliedCouponId;
+    const label = c.type === 'percent' ? `${c.value}% de descuento` : `${money(c.value)} de descuento`;
+    const expiryStr = new Date(c.expiresAt).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
+    return `
+      <div class="coupon-card ${isApplied ? 'applied' : ''} ${isExpired ? 'expired-card' : ''}">
+        <div class="cc-left">
+          <span class="cc-pct">Cupón Dangai Food${isExpired ? ' (vencido)' : ''}</span>
+          <span class="cc-amount">${c.type === 'percent' ? `${c.value}% OFF` : money(c.value)}</span>
+          <span class="cc-exp">${escapeHTML(c.description)} &mdash; Vence: ${expiryStr}</span>
+        </div>
+        <div class="cc-right">
+          ${!isExpired ? `<button class="cc-apply-btn" data-apply-coupon="${c.id}">${isApplied ? '✔️ Aplicado' : 'Aplicar'}</button>` : '<span style="color:rgba(255,255,255,0.7);font-size:0.8rem;">⌛ Vencido</span>'}
+        </div>
+      </div>`;
+  }).join('');
+
+  couponCards.querySelectorAll('[data-apply-coupon]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.applyCoupon;
+      if (appliedCouponId === id) {
+        appliedCouponId = null;
+        toastMessage('Cupón removido.');
+      } else {
+        appliedCouponId = id;
+        toastMessage('🎟️ ¡Cupón aplicado!');
+      }
+      renderCart();
+    });
+  });
 }
 
 function buildWhatsappMessage(order) {
@@ -283,6 +360,7 @@ async function submitOrder() {
   try {
     const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
     const totalCost = cart.reduce((sum, item) => sum + item.cost, 0);
+    const discount = getCouponDiscount(subtotal);
     const order = {
       id: `PED-${Date.now().toString().slice(-6)}`,
       createdAt: new Date().toISOString(),
@@ -292,9 +370,11 @@ async function submitOrder() {
       notes: notesInput.value.trim(),
       subtotal,
       deliveryFee: getDeliveryFee(),
-      total: subtotal + getDeliveryFee(),
+      discount,
+      couponId: appliedCouponId || null,
+      total: subtotal + getDeliveryFee() - discount,
       cost: totalCost,
-      estimatedProfit: subtotal - totalCost,
+      estimatedProfit: subtotal - totalCost - discount,
       paymentMethod,
       receiptBase64: paymentReceiptBase64
     };
@@ -312,11 +392,23 @@ async function submitOrder() {
     });
     await setJson(storage.products, updatedProducts);
 
+    // Mark coupon as redeemed if used
+    if (appliedCouponId) {
+      const coupons = getJson('restaurant_coupons_v2', {});
+      if (coupons[profile.clientId]) {
+        coupons[profile.clientId] = coupons[profile.clientId].map(c =>
+          c.id === appliedCouponId ? { ...c, redeemed: true, redeemedAt: new Date().toISOString() } : c
+        );
+        setJson('restaurant_coupons_v2', coupons);
+      }
+    }
+
     cart = [];
     notesInput.value = '';
     if (clientReceiptInput) clientReceiptInput.value = '';
     paymentReceiptBase64 = null;
     paymentMethod = 'efectivo';
+    appliedCouponId = null;
     if (typeof updatePaymentUI === 'function') updatePaymentUI();
     
     renderCart();

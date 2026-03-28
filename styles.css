@@ -180,10 +180,101 @@ th { color: var(--muted); font-size: .85rem; text-transform: uppercase; letter-s
 .rating-done p { margin: 4px 0 0; }
 .rating-done p:first-child { color: var(--warning); font-size: 1.1rem; letter-spacing: 2px; }
 
+/* ─── COUPON SYSTEM ────────────────────────────────────────────── */
+/* Modal overlay */
+.coupon-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(6px); display: flex; align-items: center;
+  justify-content: center; z-index: 5000; padding: 20px;
+  animation: fadeOverlay .2s ease;
+}
+@keyframes fadeOverlay { from { opacity: 0; } to { opacity: 1; } }
+.coupon-modal {
+  background: #fff; border-radius: 28px; padding: 32px;
+  width: 100%; max-width: 480px; box-shadow: 0 24px 60px rgba(0,0,0,0.18);
+  animation: slideModal .25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes slideModal { from { opacity: 0; transform: translateY(30px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.coupon-modal h3 { margin: 0 0 6px; font-size: 1.4rem; font-weight: 800; color: var(--secondary); }
+.coupon-modal p.modal-sub { margin: 0 0 24px; font-size: 0.9rem; color: var(--muted); }
+.coupon-modal .modal-form { display: grid; gap: 16px; }
+.coupon-modal-actions { display: flex; gap: 12px; margin-top: 24px; }
+.coupon-modal-actions button { flex: 1; }
+.coupon-preview {
+  background: linear-gradient(135deg, #ff4500 0%, #ff6b35 100%);
+  border-radius: 20px; padding: 20px 24px; margin-top: 4px;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 8px 20px rgba(255,69,0,0.3);
+}
+.coupon-preview .cp-left { display: grid; gap: 3px; }
+.coupon-preview .cp-badge { font-size: 0.72rem; font-weight: 700; color: rgba(255,255,255,0.75); text-transform: uppercase; letter-spacing: .1em; }
+.coupon-preview .cp-amount { font-size: 2rem; font-weight: 800; color: #fff; line-height: 1; }
+.coupon-preview .cp-name { font-size: 0.85rem; color: rgba(255,255,255,0.8); }
+.coupon-preview .cp-expiry { font-size: 0.75rem; color: rgba(255,255,255,0.7); margin-top: 4px; }
+.coupon-preview .cp-icon { font-size: 2.5rem; opacity: 0.9; }
+
+/* Admin customers row with coupon */
+.customer-row-coupons { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+.coupon-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: linear-gradient(135deg, rgba(255,69,0,0.08), rgba(255,107,53,0.04));
+  border: 1px solid rgba(255,69,0,0.25); border-radius: 12px;
+  padding: 6px 12px; font-size: 0.82rem; font-weight: 600; color: var(--primary);
+}
+.coupon-chip.expired { opacity: 0.5; border-color: var(--line); color: var(--muted); background: #f3f4f6; }
+.coupon-chip .chip-del { background: none; border: none; cursor: pointer; color: var(--danger); padding: 0; font-size: 1rem; line-height: 1; margin-left: 4px; }
+
+/* Client coupon section */
+.coupon-section {
+  background: #fffaf8; border: 1px dashed rgba(255,69,0,0.3);
+  border-radius: 16px; padding: 16px 20px; margin: 16px 0;
+}
+.coupon-section h4 { margin: 0 0 10px; font-size: 1rem; font-weight: 800; color: var(--secondary); display: flex; align-items: center; gap: 8px; }
+.coupon-cards { display: grid; gap: 10px; }
+.coupon-card {
+  background: linear-gradient(135deg, #ff4500 0%, #ff7a3d 100%);
+  border-radius: 16px; padding: 16px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 6px 16px rgba(255,69,0,0.2); cursor: pointer;
+  transition: transform .15s, box-shadow .15s; border: 3px solid transparent;
+  position: relative; overflow: hidden;
+}
+.coupon-card::before { content: ''; position: absolute; right: -20px; top: 50%; transform: translateY(-50%); width: 80px; height: 80px; background: rgba(255,255,255,0.08); border-radius: 50%; }
+.coupon-card::after  { content: ''; position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; background: rgba(255,255,255,0.06); border-radius: 50%; }
+.coupon-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(255,69,0,0.3); }
+.coupon-card.applied { border-color: var(--success); box-shadow: 0 8px 20px rgba(16,185,129,0.25); background: linear-gradient(135deg, #10b981, #34d399); }
+.coupon-card.expired-card { background: linear-gradient(135deg, #9ca3af, #d1d5db); box-shadow: none; cursor: default; }
+.coupon-card .cc-left { display: grid; gap: 3px; }
+.coupon-card .cc-pct { font-size: 0.7rem; font-weight: 700; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: .1em; }
+.coupon-card .cc-amount { font-size: 1.6rem; font-weight: 800; color: #fff; line-height: 1.1; }
+.coupon-card .cc-exp { font-size: 0.72rem; color: rgba(255,255,255,0.7); margin-top: 2px; }
+.coupon-card .cc-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; z-index: 1; }
+.coupon-card .cc-apply-btn {
+  background: rgba(255,255,255,0.25); backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.4); border-radius: 999px;
+  color: #fff; font-size: 0.78rem; font-weight: 700; padding: 6px 14px;
+  cursor: pointer; transition: background .15s;
+}
+.coupon-card .cc-apply-btn:hover { background: rgba(255,255,255,0.4); }
+.coupon-card.applied .cc-apply-btn { background: rgba(255,255,255,0.3); }
+
+/* Summary discount line */
+.summary-discount { color: var(--success); font-weight: 700; }
+
+/* Pizza size badge */
+.pizza-size-badge { font-size: 0.7rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 2px; }
+
+/* Order list */
+.order-list { display: grid; gap: 16px; }
+.order-card { background: #fff; border: 1px solid var(--line); border-radius: 20px; overflow: hidden; }
+.order-header { padding: 18px 20px; }
+.order-body { padding: 0 20px 16px; display: grid; gap: 8px; font-size: .95rem; }
+
 @media (max-width: 860px) {
   .stats-grid, .inventory-grid, .inventory-grid-wide, .grid-form { grid-template-columns: 1fr; }
   .size-edit-grid { grid-template-columns: 1fr; }
   .wizard-actions-row { flex-direction: column; align-items: stretch; }
   .wizard-actions-row button { width: 100%; padding: 18px; font-size: 1.1rem; }
   .menu-grid { grid-template-columns: 1fr; gap: 16px; }
+  .coupon-modal { padding: 24px; }
 }

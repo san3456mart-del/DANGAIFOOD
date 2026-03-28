@@ -57,4 +57,5 @@
   window.FirebaseDB.syncKey(keys.orders);
   if (keys.users) window.FirebaseDB.syncKey(keys.users);
   if (keys.settings) window.FirebaseDB.syncKey(keys.settings);
+  window.FirebaseDB.syncKey('restaurant_coupons_v2');
 })();
