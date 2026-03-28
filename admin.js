@@ -203,7 +203,7 @@ function renderOrders() {
                <button class="oc-action-btn" onclick="confirmPayment('${order.id}')">Validar pago</button>`
           : ''}
         ${order.receiptBase64
-          ? `<a href="javascript:void(0)" onclick="const w=window.open('','_blank');w.document.write('<img src=\\'${order.receiptBase64}\\' style=\\'max-width:100%;\\'/>');return false;"
+          ? `<a href="javascript:void(0)" onclick="const w=window.open('','_blank');w.document.write('<body style=\\'margin:0;display:flex;justify-content:center;align-items:center;background:#222;height:100vh;\\'><img src=\\'${order.receiptBase64}\\' style=\\'max-width:500px;max-height:95vh;object-fit:contain;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.5);\\'/></body>');return false;"
               class="oc-action-btn">🖼️ Comprobante</a>`
           : ''}
       </div>`;
@@ -440,7 +440,7 @@ function renderPendingPayments() {
         <div><strong>Método:</strong> ${order.paymentMethod === 'qr' ? '📱 App/QR' : '🔑 Bre-B'}</div>
         <div><strong>Total:</strong> <span style="color:var(--primary); font-weight:bold;">${money(order.total)}</span></div>
         <div style="margin-top:8px;">
-          <a href="javascript:void(0)" onclick="const w=window.open('','_blank');w.document.write('<img src=\\'${order.receiptBase64}\\' style=\\'max-width:100%;\\'/>');" style="color:var(--primary); text-decoration:underline; font-weight:bold; font-size:0.9rem;">🖼️ Ver comprobante de pago</a>
+          <a href="javascript:void(0)" onclick="const w=window.open('','_blank');w.document.write('<body style=\\'margin:0;display:flex;justify-content:center;align-items:center;background:#222;height:100vh;\\'><img src=\\'${order.receiptBase64}\\' style=\\'max-width:500px;max-height:95vh;object-fit:contain;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.5);\\'/></body>');" style="color:var(--primary); text-decoration:underline; font-weight:bold; font-size:0.9rem;">🖼️ Ver comprobante de pago</a>
         </div>
         <div style="margin-top:12px; display:flex; justify-content:flex-end;">
           <button class="primary-btn mt-2" onclick="confirmPayment('${order.id}')">Confirmar Pago</button>
