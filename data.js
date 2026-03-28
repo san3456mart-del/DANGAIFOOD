@@ -205,7 +205,7 @@
     deliveryFee: 0,
     adminCredentials: {
       username: 'admin',
-      password: '123456'
+      password: 'familia12'
     },
     sizes,
     additionalIngredients,
