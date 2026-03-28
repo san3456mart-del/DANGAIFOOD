@@ -507,8 +507,9 @@ function renderCustomers() {
   customersTableBody.querySelectorAll('[data-delete-coupon]').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
-      const { deleteCoupon, clientId } = btn.dataset;
-      deleteCouponForClient(clientId, deleteCoupon === 'true' ? btn.dataset.deleteCoupon : btn.dataset.deleteCoupon);
+      const couponId = btn.dataset.deleteCoupon;
+      const clientId = btn.dataset.clientId;
+      if (couponId && clientId) deleteCouponForClient(clientId, couponId);
     });
   });
 
@@ -1218,3 +1219,7 @@ if (closeCashBtn) {
 
 // Update renderAll to include cash register
 const _origRenderAll = renderAll;
+function renderAll() {
+  _origRenderAll();
+  renderCashRegister();
+}
