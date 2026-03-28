@@ -702,13 +702,26 @@ function renderOrdersHistory() {
       const labels = ['Pendiente', 'Preparación', 'En camino'];
       let currentIndex = steps.indexOf(order.status);
       if (currentIndex === -1) currentIndex = 0;
-      
+
+      const showVideo = currentIndex === 1 || currentIndex === 2;
+      const videoSrc = currentIndex === 1 ? 'public/en_preparacion.mp4' : 'public/en_camino.mp4';
+      const videoBorder = currentIndex === 1 ? 'var(--success)' : 'var(--primary)';
+      const videoGlow   = currentIndex === 1 ? 'rgba(16,185,129,0.3)' : 'rgba(255,69,0,0.3)';
+
       trackingHTML = `
-        <div class="tracker-steps" style="margin-top:${currentIndex === 1 || currentIndex === 2 ? '90px' : '16px'}; transition:margin 0.3s ease;">
+        <div class="tracker-steps" style="margin-top:${showVideo ? '100px' : '16px'}; transition:margin 0.3s ease; padding-top: 8px;">
           ${steps.map((step, idx) => `
             <div class="tracker-step ${currentIndex >= idx ? 'active' : ''}" style="position:relative;">
-              ${step === 'preparacion' && currentIndex === 1 ? `<div style="position:absolute; bottom:calc(100% + 12px); left:50%; transform:translateX(-50%); width:80px; border-radius:14px; overflow:hidden; border:3px solid var(--success); box-shadow:0 8px 24px rgba(16,185,129,0.3); z-index:10;"><video src="public/en_preparacion.mp4" autoplay loop muted playsinline style="width:100%; display:block; aspect-ratio:1; object-fit:cover;"></video></div>` : ''}
-              ${step === 'encamino' && currentIndex === 2 ? `<div style="position:absolute; bottom:calc(100% + 12px); left:50%; transform:translateX(-50%); width:80px; border-radius:14px; overflow:hidden; border:3px solid var(--primary); box-shadow:0 8px 24px rgba(255,69,0,0.3); z-index:10;"><video src="public/en_camino.mp4" autoplay loop muted playsinline style="width:100%; display:block; aspect-ratio:1; object-fit:cover;"></video></div>` : ''}
+              ${showVideo && idx === currentIndex ? `
+                <div style="position:absolute; bottom:calc(100% + 14px); left:50%; transform:translateX(-50%);
+                     width:84px; height:84px; border-radius:16px; overflow:hidden;
+                     border:3px solid ${videoBorder};
+                     box-shadow:0 8px 24px ${videoGlow}; z-index:10; background:#000;">
+                  <video data-autoplay src="${videoSrc}"
+                    loop muted playsinline
+                    style="width:100%; height:100%; display:block; object-fit:cover;">
+                  </video>
+                </div>` : ''}
               <div class="tracker-dot"></div>
               <span>${labels[idx]}</span>
             </div>
@@ -789,6 +802,21 @@ function renderOrdersHistory() {
         s.style.color = Number(s.dataset.val) <= val ? 'var(--warning)' : '#d1d5db';
       });
     });
+  });
+
+  // Force-play tracking videos (innerHTML doesn't trigger autoplay in mobile browsers)
+  clientOrdersList.querySelectorAll('video[data-autoplay]').forEach(video => {
+    video.muted = true;
+    video.loop = true;
+    video.playsInline = true;
+    const promise = video.play();
+    if (promise !== undefined) {
+      promise.catch(() => {
+        // Autoplay blocked — retry on first user interaction
+        document.addEventListener('click', () => video.play(), { once: true });
+        document.addEventListener('touchstart', () => video.play(), { once: true });
+      });
+    }
   });
 }
 
