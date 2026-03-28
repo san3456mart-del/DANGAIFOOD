@@ -407,17 +407,38 @@ function checkSession() {
   }
 }
 
-loginForm.addEventListener('submit', (e) => {
+async function hashPass(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const user = document.getElementById('adminUser').value.trim();
   const pass = document.getElementById('adminPassword').value.trim();
-  if (user === cfg.adminCredentials.username && pass === cfg.adminCredentials.password) {
-    localStorage.setItem(storage.adminSession, 'true');
-    soundArmed = true;
-    showToast('Bienvenido al panel.');
-    checkSession();
-  } else {
-    showToast('Usuario o contraseña incorrectos.');
+  const btn = loginForm.querySelector('button[type="submit"]');
+  
+  if (!user || !pass) return showToast('Ingresa usuario y contraseña.');
+  
+  btn.disabled = true;
+  btn.textContent = 'Verificando...';
+  
+  try {
+    const hash = await hashPass(pass);
+    // Verificar que el usuario sea admin y que la contraseña coincida con familia12 a través de su hash
+    if (user === 'admin' && hash === '8072db95acfdbcc1ba779cc6738253eb8fd3b05b691dc181af6ab1fe41f802f3') {
+      localStorage.setItem(storage.adminSession, 'true');
+      soundArmed = true;
+      showToast('Bienvenido al panel.');
+      checkSession();
+    } else {
+      showToast('Usuario o contraseña incorrectos.');
+    }
+  } catch (err) {
+    showToast('Error interno validando contraseña.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
   }
 });
 

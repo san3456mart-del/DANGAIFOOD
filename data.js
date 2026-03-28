@@ -203,10 +203,6 @@
     restaurantName: 'Dangai Food',
     whatsappNumber: '573506876430',
     deliveryFee: 0,
-    adminCredentials: {
-      username: 'admin',
-      password: 'familia12'
-    },
     sizes,
     additionalIngredients,
     storageKeys: {
