@@ -1183,3 +1183,38 @@ th { color: var(--muted); font-size: .85rem; text-transform: uppercase; letter-s
 .atb-total strong { font-size: 1.2rem; }
 .atb-diff span { font-size: 0.82rem; color: var(--muted); font-weight: 600; }
 .atb-diff strong { font-size: 1rem; }
+
+/* ═══════════════════════════════════════════════════════════════
+   CASH REGISTER — PAYMENT BREAKDOWN CARDS
+═══════════════════════════════════════════════════════════════ */
+.cr-pay-breakdown {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+.cr-pay-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #f9fafb;
+  border: 1px solid var(--line);
+  transition: box-shadow .2s;
+}
+.cr-pay-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+.cr-order-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f9fafb;
+  border: 1px solid var(--line);
+  margin-bottom: 6px;
+  font-size: 0.88rem;
+}
+@media (max-width: 680px) {
+  .cr-pay-breakdown { grid-template-columns: 1fr; }
+}
