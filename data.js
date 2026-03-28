@@ -11,6 +11,28 @@
     'piña', 'bocadillo', 'papa chongo'
   ];
 
+  const defaultExtras = [
+    { id: 'ext-jamon',      name: 'Jamón',               price: 2000, category: 'Proteína'  },
+    { id: 'ext-tocineta',   name: 'Tocineta',             price: 2500, category: 'Proteína'  },
+    { id: 'ext-pollo',      name: 'Pollo desmenuzado',    price: 2500, category: 'Proteína'  },
+    { id: 'ext-salami',     name: 'Salami',               price: 2000, category: 'Proteína'  },
+    { id: 'ext-chorizo',    name: 'Chorizo',              price: 2000, category: 'Proteína'  },
+    { id: 'ext-butifarra',  name: 'Butifarra',            price: 2000, category: 'Proteína'  },
+    { id: 'ext-pepperoni',  name: 'Pepperoni',            price: 2000, category: 'Proteína'  },
+    { id: 'ext-suiza',      name: 'Salchicha suiza',      price: 2000, category: 'Proteína'  },
+    { id: 'ext-maiz',       name: 'Maíz',                 price: 1000, category: 'Vegetal'   },
+    { id: 'ext-pimenton',   name: 'Pimentón',             price: 1000, category: 'Vegetal'   },
+    { id: 'ext-cebolla',    name: 'Cebolla',              price: 1000, category: 'Vegetal'   },
+    { id: 'ext-champis',    name: 'Champiñones',          price: 1500, category: 'Vegetal'   },
+    { id: 'ext-pina',       name: 'Piña',                 price: 1000, category: 'Fruta'     },
+    { id: 'ext-bocadillo',  name: 'Bocadillo',            price: 1500, category: 'Especial'  },
+    { id: 'ext-papa',       name: 'Papa chongo',          price: 1500, category: 'Especial'  },
+    { id: 'ext-qcosten',    name: 'Queso costeño',        price: 2000, category: 'Queso'     },
+    { id: 'ext-qcheddar',   name: 'Queso cheddar',        price: 2000, category: 'Queso'     },
+    { id: 'ext-qparme',     name: 'Queso parmesano',      price: 2000, category: 'Queso'     },
+    { id: 'ext-extramozz',  name: 'Extra mozzarella',     price: 2000, category: 'Queso'     },
+  ];
+
   const menuBase = [
     {
       name: 'Pizza Margarita',
@@ -205,6 +227,7 @@
     deliveryFee: 0,
     sizes,
     additionalIngredients,
+    defaultExtras,
     storageKeys: {
       profile: 'restaurant_profile_v2',
       products: 'restaurant_products_v2',
@@ -212,7 +235,8 @@
       users: 'restaurant_users_v2',
       settings: 'restaurant_settings_v2',
       adminSession: 'restaurant_admin_session_v2',
-      lastOrderSound: 'restaurant_last_order_sound_v2'
+      lastOrderSound: 'restaurant_last_order_sound_v2',
+      extras: 'restaurant_extras_v2'
     },
     defaultProducts
   };

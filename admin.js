@@ -516,6 +516,7 @@ function renderAll() {
   renderSettings();
   renderPendingPayments();
   renderCustomers();
+  renderAdditionals();
 }
 
 function checkSession() {
@@ -759,6 +760,116 @@ document.getElementById('couponModalSendBtn').addEventListener('click', () => {
   renderCustomers();
   showToast(`🎟️ Cupón enviado correctamente.`);
 });
+
+
+/* ─── ADDITIONALS SYSTEM ──────────────────────────────────────── */
+const additionalForm    = document.getElementById('additionalForm');
+const newAddlBtn        = document.getElementById('newAddlBtn');
+const cancelAddlBtn     = document.getElementById('cancelAddlBtn');
+const additionalsList   = document.getElementById('additionalsList');
+const addlCount         = document.getElementById('addlCount');
+
+function getExtras() {
+  const stored = getJson(storage.extras, null);
+  if (stored && Array.isArray(stored) && stored.length) return stored;
+  return cfg.defaultExtras;
+}
+
+function saveExtras(extras) {
+  setJson(storage.extras, extras);
+}
+
+function fillAddlForm(extra) {
+  document.getElementById('addlId').value       = extra?.id || '';
+  document.getElementById('addlName').value     = extra?.name || '';
+  document.getElementById('addlPrice').value    = extra?.price || '';
+  document.getElementById('addlCategory').value = extra?.category || '';
+}
+
+function resetAddlForm() { fillAddlForm(null); }
+
+function renderAdditionals() {
+  if (!additionalsList) return;
+  const extras = getExtras();
+  if (addlCount) addlCount.textContent = `${extras.length} adicionales`;
+
+  if (!extras.length) {
+    additionalsList.innerHTML = '<div class="empty-state">No hay adicionales configurados.</div>';
+    return;
+  }
+
+  // Group by category
+  const groups = {};
+  extras.forEach(ex => {
+    const cat = ex.category || 'Sin categoría';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(ex);
+  });
+
+  additionalsList.innerHTML = Object.entries(groups).map(([cat, items]) => `
+    <div class="addl-category-block">
+      <div class="addl-cat-header">
+        <span class="addl-cat-badge">${escapeHTML(cat)}</span>
+        <span class="menu-meta">${items.length} ingrediente${items.length !== 1 ? 's' : ''}</span>
+      </div>
+      ${items.map(ex => `
+        <div class="addl-row">
+          <div class="addl-row-info">
+            <strong>${escapeHTML(ex.name)}</strong>
+            <span class="addl-price-badge">${money(ex.price)} c/u</span>
+          </div>
+          <div class="addl-row-actions">
+            <button class="mini-btn" data-edit-addl="${ex.id}">✏️ Editar</button>
+            <button class="mini-btn danger" data-del-addl="${ex.id}">🗑️ Borrar</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+
+  additionalsList.querySelectorAll('[data-edit-addl]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ex = getExtras().find(e => e.id === btn.dataset.editAddl);
+      if (ex) { fillAddlForm(ex); showToast(`Editando: ${ex.name}`); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    });
+  });
+
+  additionalsList.querySelectorAll('[data-del-addl]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      saveExtras(getExtras().filter(e => e.id !== btn.dataset.delAddl));
+      renderAdditionals();
+      showToast('Adicional eliminado.');
+    });
+  });
+}
+
+if (additionalForm) {
+  additionalForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const id   = document.getElementById('addlId').value.trim();
+    const name = document.getElementById('addlName').value.trim();
+    const price = Number(document.getElementById('addlPrice').value);
+    const cat  = document.getElementById('addlCategory').value.trim();
+
+    if (!name) return showToast('Ingresa el nombre del ingrediente.');
+    if (!price || price < 0) return showToast('Ingresa un precio válido.');
+
+    const extras = getExtras();
+    const existing = extras.findIndex(e => e.id === id);
+    const newExtra = { id: id || `ext-${Date.now()}`, name, price, category: cat || 'Otros' };
+
+    if (existing >= 0) extras[existing] = newExtra;
+    else extras.push(newExtra);
+
+    saveExtras(extras);
+    resetAddlForm();
+    renderAdditionals();
+    showToast(existing >= 0 ? `✅ "${name}" actualizado.` : `✅ "${name}" agregado.`);
+  });
+}
+
+if (newAddlBtn)    newAddlBtn.addEventListener('click', resetAddlForm);
+if (cancelAddlBtn) cancelAddlBtn.addEventListener('click', resetAddlForm);
 
 resetProductForm();
 checkSession();

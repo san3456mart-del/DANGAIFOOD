@@ -212,6 +212,7 @@
           <span class="pill success" id="menuCountLabel">0 productos</span>
         </div>
         <div id="menuGrid" class="menu-grid"></div>
+
         <div class="wizard-actions-row wizard-actions-bottom">
           <button type="button" class="ghost-btn" id="backToProfileBtn">Volver</button>
           <button type="button" class="primary-btn" id="goToConfirmBtn">Continuar a confirmación</button>
@@ -295,6 +296,63 @@
 
   <div id="toast" class="toast"></div>
 
+  <div id="pizzaModalOverlay" class="coupon-modal-overlay hidden">
+    <div class="pizza-modal">
+
+      <!-- Tab bar -->
+      <div class="pm-tabs">
+        <button class="pm-tab active" data-pm-tab="normal">🍕 Pizza completa</button>
+        <button class="pm-tab" data-pm-tab="half">½ Mitad y Mitad</button>
+        <button class="pm-tab" data-pm-tab="extras">➕ Adicionales</button>
+      </div>
+
+      <!-- NORMAL TAB -->
+      <div class="pm-panel active" id="pmTabNormal">
+        <h3 class="pm-title" id="pmProductName">—</h3>
+        <p class="pm-sub" id="pmProductIngredients"></p>
+        <p class="pm-sub" style="font-weight:700;color:var(--secondary);margin-bottom:4px;">¿Quieres quitar algún ingrediente?</p>
+        <div id="pmRemovables" class="pm-removables"></div>
+      </div>
+
+      <!-- HALF & HALF TAB -->
+      <div class="pm-panel hidden" id="pmTabHalf">
+        <div class="pm-half-display" id="pmHalfDisplay">
+          <div class="pm-half-side left">
+            <span class="pm-half-label">1ª mitad</span>
+            <strong id="pmHalf1Name">&mdash;</strong>
+          </div>
+          <div class="pm-half-divider">½</div>
+          <div class="pm-half-side right">
+            <span class="pm-half-label">2ª mitad</span>
+            <strong id="pmHalf2Name">Elige abajo</strong>
+          </div>
+        </div>
+        <p class="pm-sub" style="font-weight:700;color:var(--secondary);margin-bottom:10px;">Elige la segunda mitad de tu pizza:</p>
+        <div id="pmHalfGrid" class="pm-half-grid"></div>
+      </div>
+
+      <!-- EXTRAS TAB -->
+      <div class="pm-panel hidden" id="pmTabExtras">
+        <p class="pm-sub">Agrega ingredientes extra a tu pizza. El precio se suma automáticamente.</p>
+        <div id="pmExtrasList" class="pm-extras-list"></div>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="pm-footer">
+        <div class="pm-price-row">
+          <span>Precio final</span>
+          <strong id="pmFinalPrice">$0</strong>
+        </div>
+        <div class="pm-actions">
+          <button type="button" class="ghost-btn" id="pizzaModalCancelBtn">Cancelar</button>
+          <button type="button" class="auth-submit-btn" style="flex:2;" id="pizzaModalAddBtn">✅ Agregar al pedido</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
   <div id="floatingCartBtn" class="floating-cart hidden">
     <div>
       <span class="pill accent" id="floatingCartCount">0</span>
@@ -305,8 +363,8 @@
 
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
-  <script src="data.js?v=2"></script>
-  <script src="firebase-init.js?v=2"></script>
-  <script src="app.js?v=2"></script>
+  <script src="data.js?v=3"></script>
+  <script src="firebase-init.js?v=3"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

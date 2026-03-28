@@ -65,6 +65,7 @@
         <button class="tab-btn active" data-tab="ordersTab">Pedidos activos</button>
         <button class="tab-btn" data-tab="salesTab">Ventas finalizadas</button>
         <button class="tab-btn" data-tab="inventoryTab">Menú local</button>
+        <button class="tab-btn" data-tab="tabAdditionals">🧀 Adicionales</button>
         <button class="tab-btn" data-tab="tabCustomers">Clientes</button>
         <button class="tab-btn" data-tab="tabSettings">Pagos (QR / Bre-B)</button>
       </div>
@@ -177,7 +178,60 @@
         </div>
       </section>
 
-      <!-- SETTINGS TAB -->
+      <!-- ADDITIONALS TAB -->
+      <section id="tabAdditionals" class="tab-panel hidden card">
+        <div class="section-title-row">
+          <div>
+            <p class="section-kicker">Configuración</p>
+            <h2>Ingredientes adicionales y precios</h2>
+          </div>
+          <span class="pill accent">Se reflejan en el pedido del cliente</span>
+        </div>
+        <p class="helper-text">Agrega o edita los ingredientes que los clientes pueden pedir como adicionales. Define el precio que se cobrará al agregar cada uno.</p>
+
+        <div class="addl-admin-grid">
+          <!-- Add / Edit form -->
+          <article class="card addl-form-card">
+            <div class="section-title-row">
+              <div>
+                <p class="section-kicker">Editor</p>
+                <h2>Agregar / Editar adicional</h2>
+              </div>
+              <button type="button" id="newAddlBtn" class="ghost-btn">Nuevo adicional</button>
+            </div>
+            <form id="additionalForm" class="grid-form" style="margin-top:18px;">
+              <input type="hidden" id="addlId" />
+              <label class="full-width">Nombre del ingrediente
+                <input id="addlName" required placeholder="Ej. Tocineta, Pepperoni, Extra mozzarella" />
+              </label>
+              <label>Precio adicional ($)
+                <input id="addlPrice" type="number" min="0" step="100" required placeholder="Ej. 2000" />
+              </label>
+              <label>Categoría (opcional)
+                <input id="addlCategory" placeholder="Ej. Proteina, Queso, Vegetal" />
+              </label>
+              <div class="wizard-actions-row full-width">
+                <button class="primary-btn" type="submit">Guardar adicional</button>
+                <button class="ghost-btn" type="button" id="cancelAddlBtn">Limpiar</button>
+              </div>
+            </form>
+          </article>
+
+          <!-- List -->
+          <article class="card">
+            <div class="section-title-row">
+              <div>
+                <p class="section-kicker">Lista</p>
+                <h2>Adicionales configurados</h2>
+              </div>
+              <span class="pill" id="addlCount">0 adicionales</span>
+            </div>
+            <div id="additionalsList" style="margin-top:16px;"></div>
+          </article>
+        </div>
+      </section>
+
+
       <section id="tabSettings" class="tab-panel hidden card">
         <div class="section-title-row">
           <h2>Configuración de Métodos de Pago</h2>
@@ -295,8 +349,8 @@
 
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
-  <script src="data.js?v=2"></script>
-  <script src="firebase-init.js?v=2"></script>
-  <script src="admin.js?v=2"></script>
+  <script src="data.js?v=3"></script>
+  <script src="firebase-init.js?v=3"></script>
+  <script src="admin.js?v=3"></script>
 </body>
 </html>

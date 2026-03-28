@@ -88,6 +88,12 @@ function getProducts() {
   return getJson(storage.products, []);
 }
 
+function getExtras() {
+  const stored = getJson(storage.extras, null);
+  if (stored && Array.isArray(stored) && stored.length) return stored;
+  return cfg.defaultExtras;
+}
+
 function setStep(step) {
   if (step === 4 && currentStep !== 4) previousStep = currentStep;
   currentStep = step;
@@ -163,10 +169,6 @@ function renderMenu() {
 
   products.forEach((product) => {
     const stock = Number(product?.stock?.[activeSize] || 0);
-    const options = Array.isArray(product.removableOptions) && product.removableOptions.length
-      ? `<div class="options-box"><strong>Quitar ingredientes:</strong><div>${product.removableOptions.map((item) => `
-          <label class="checkbox-chip"><input type="checkbox" value="${escapeHTML(item)}" data-product-id="${product.id}" data-size-key="${activeSize}" /> Sin ${escapeHTML(item)}</label>`).join('')}</div></div>`
-      : '<div class="menu-meta">Este sabor no tiene ingredientes removibles configurados.</div>';
 
     const card = document.createElement('article');
     card.className = 'menu-item';
@@ -178,42 +180,263 @@ function renderMenu() {
           <h3>${escapeHTML(product.name)}</h3>
           <div class="menu-price">${money(product.prices[activeSize])}</div>
           <div class="menu-meta">${escapeHTML(product.ingredients)}</div>
-          ${stock < 5 ? `<div class="menu-stock-warning">Solo quedan ${stock} disponibles</div>` : ''}
+          ${stock < 5 && stock > 0 ? `<div class="menu-stock-warning">Solo quedan ${stock} disponibles</div>` : ''}
         </div>
       </div>
-      ${options}
-      <button class="primary-btn add-btn" data-id="${product.id}" data-size-key="${activeSize}" ${stock < 1 ? 'disabled' : ''}>${stock < 1 ? 'Agotado' : 'Añadir'}</button>
+      <button class="primary-btn add-btn" data-id="${product.id}" data-size-key="${activeSize}" ${stock < 1 ? 'disabled' : ''}>
+        ${stock < 1 ? '🚫 Agotado' : '➕ Personalizar y añadir'}
+      </button>
     `;
     menuGrid.appendChild(card);
   });
 
   menuGrid.querySelectorAll('.add-btn').forEach((btn) => {
-    btn.addEventListener('click', () => addToCart(btn.dataset.id, btn.dataset.sizeKey));
+    btn.addEventListener('click', () => openPizzaModal(btn.dataset.id, btn.dataset.sizeKey));
   });
 }
 
-function addToCart(productId, sizeKey) {
-  const product = getProducts().find((p) => p.id === productId);
+// ─── PIZZA MODAL STATE ───────────────────────────────────────────
+let _modalProduct  = null;  // product being customized
+let _modalSizeKey  = null;  // size being customized
+let _modalHalf2    = null;  // second half product (or null)
+let _modalExtras   = {};    // { extId: qty }
+let _modalRemoved  = [];    // removed ingredients
+
+const pizzaModalOverlay  = document.getElementById('pizzaModalOverlay');
+const pmProductName      = document.getElementById('pmProductName');
+const pmProductIngredients = document.getElementById('pmProductIngredients');
+const pmRemovables       = document.getElementById('pmRemovables');
+const pmHalfGrid         = document.getElementById('pmHalfGrid');
+const pmHalf1Name        = document.getElementById('pmHalf1Name');
+const pmHalf2Name        = document.getElementById('pmHalf2Name');
+const pmExtrasList       = document.getElementById('pmExtrasList');
+const pmFinalPrice       = document.getElementById('pmFinalPrice');
+const pmTabs             = document.querySelectorAll('.pm-tab');
+const pmPanels           = document.querySelectorAll('.pm-panel');
+const pizzaModalAddBtn   = document.getElementById('pizzaModalAddBtn');
+const pizzaModalCancelBtn = document.getElementById('pizzaModalCancelBtn');
+
+function openPizzaModal(productId, sizeKey) {
+  const product = getProducts().find(p => p.id === productId);
   const sizeInfo = sizes[sizeKey];
   if (!product || !sizeInfo) return toastMessage('Producto no encontrado.');
   const stock = Number(product?.stock?.[sizeKey] || 0);
   if (stock < 1) return toastMessage('Ese sabor está agotado en ese tamaño.');
 
-  const removed = Array.from(document.querySelectorAll(`input[data-product-id="${productId}"][data-size-key="${sizeKey}"]:checked`)).map((el) => el.value);
+  _modalProduct = product;
+  _modalSizeKey = sizeKey;
+  _modalHalf2   = null;
+  _modalExtras  = {};
+  _modalRemoved = [];
+
+  // --- Normal tab ---
+  pmProductName.textContent = product.name;
+  pmProductIngredients.textContent = product.ingredients;
+  pmRemovables.innerHTML = '';
+  if (product.removableOptions && product.removableOptions.length) {
+    product.removableOptions.forEach(opt => {
+      const lbl = document.createElement('label');
+      lbl.className = 'checkbox-chip';
+      lbl.innerHTML = `<input type="checkbox" value="${escapeHTML(opt)}"> Sin ${escapeHTML(opt)}`;
+      lbl.querySelector('input').addEventListener('change', (e) => {
+        if (e.target.checked) { if (!_modalRemoved.includes(opt)) _modalRemoved.push(opt); }
+        else { _modalRemoved = _modalRemoved.filter(r => r !== opt); }
+      });
+      pmRemovables.appendChild(lbl);
+    });
+  } else {
+    pmRemovables.innerHTML = '<div class="pm-no-opts">Este sabor no tiene ingredientes removibles.</div>';
+  }
+
+  // --- Half & Half tab ---
+  pmHalf1Name.textContent = product.name;
+  pmHalf2Name.textContent = 'Elige abajo';
+  _renderHalfGrid(sizeKey, productId);
+
+  // --- Extras tab ---
+  _renderExtrasTab();
+
+  // Switch to Normal tab
+  _switchPmTab('normal');
+  _updateModalPrice();
+  pizzaModalOverlay.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePizzaModal() {
+  pizzaModalOverlay.classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function _switchPmTab(tabName) {
+  pmTabs.forEach(t => t.classList.toggle('active', t.dataset.pmTab === tabName));
+  pmPanels.forEach(p => p.classList.toggle('active', p.id === `pmTab${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`));
+  pmPanels.forEach(p => p.classList.toggle('hidden', p.id !== `pmTab${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`));
+}
+
+function _renderHalfGrid(sizeKey, excludeId) {
+  const products = getProducts().filter(p => p.id !== excludeId && Number(p?.prices?.[sizeKey] || 0) > 0);
+  pmHalfGrid.innerHTML = '';
+  products.forEach(p => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pm-half-option';
+    btn.dataset.pid = p.id;
+    btn.innerHTML = `
+      <span class="pho-icon">🍕</span>
+      <strong>${escapeHTML(p.name)}</strong>
+      <span class="pho-price">${money(p.prices[sizeKey])}</span>
+    `;
+    btn.addEventListener('click', () => {
+      _modalHalf2 = p;
+      pmHalf2Name.textContent = p.name;
+      pmHalfGrid.querySelectorAll('.pm-half-option').forEach(b => b.classList.toggle('selected', b.dataset.pid === p.id));
+      _updateModalPrice();
+      toastMessage(`2ª mitad: ${p.name}`);
+    });
+    pmHalfGrid.appendChild(btn);
+  });
+}
+
+function _renderExtrasTab() {
+  const extras = getExtras();
+  pmExtrasList.innerHTML = '';
+  // Group by category
+  const groups = {};
+  extras.forEach(ex => {
+    const cat = ex.category || 'Otros';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(ex);
+  });
+  Object.entries(groups).forEach(([cat, items]) => {
+    const heading = document.createElement('div');
+    heading.className = 'pm-extras-category';
+    heading.textContent = cat;
+    pmExtrasList.appendChild(heading);
+    items.forEach(ex => {
+      const row = document.createElement('div');
+      row.className = 'pm-extra-row';
+      const qty = _modalExtras[ex.id] || 0;
+      row.dataset.extId = ex.id;
+      row.innerHTML = `
+        <div class="per-left">
+          <span class="per-name">${escapeHTML(ex.name)}</span>
+          <span class="per-price">${money(ex.price)} c/u</span>
+        </div>
+        <div class="per-qty">
+          <button type="button" class="per-btn per-dec" data-ext-id="${ex.id}">−</button>
+          <span class="per-count" id="pec-${ex.id}">${qty}</span>
+          <button type="button" class="per-btn per-inc" data-ext-id="${ex.id}">+</button>
+        </div>
+      `;
+      pmExtrasList.appendChild(row);
+    });
+  });
+  pmExtrasList.querySelectorAll('.per-inc').forEach(btn => {
+    btn.addEventListener('click', () => _changeExtra(btn.dataset.extId, 1));
+  });
+  pmExtrasList.querySelectorAll('.per-dec').forEach(btn => {
+    btn.addEventListener('click', () => _changeExtra(btn.dataset.extId, -1));
+  });
+}
+
+function _changeExtra(extId, delta) {
+  const qty = Math.max(0, (_modalExtras[extId] || 0) + delta);
+  if (qty === 0) delete _modalExtras[extId]; else _modalExtras[extId] = qty;
+  const span = document.getElementById(`pec-${extId}`);
+  if (span) span.textContent = qty;
+  const btn = pmExtrasList.querySelector(`.per-dec[data-ext-id="${extId}"]`);
+  if (btn) btn.disabled = qty === 0;
+  _updateModalPrice();
+}
+
+function _calcModalPrice() {
+  if (!_modalProduct || !_modalSizeKey) return 0;
+  const basePrice = Number(_modalProduct.prices[_modalSizeKey] || 0);
+  let price = basePrice;
+  // Half & Half: max of both halves
+  if (_modalHalf2) {
+    const half2Price = Number(_modalHalf2.prices[_modalSizeKey] || 0);
+    price = Math.max(basePrice, half2Price);
+  }
+  // Extras
+  const extras = getExtras();
+  Object.entries(_modalExtras).forEach(([extId, qty]) => {
+    const ex = extras.find(e => e.id === extId);
+    if (ex) price += ex.price * qty;
+  });
+  return price;
+}
+
+function _updateModalPrice() {
+  pmFinalPrice.textContent = money(_calcModalPrice());
+}
+
+// Tab switching
+pmTabs.forEach(tab => {
+  tab.addEventListener('click', () => _switchPmTab(tab.dataset.pmTab));
+});
+
+// Close modal
+pizzaModalCancelBtn.addEventListener('click', closePizzaModal);
+pizzaModalOverlay.addEventListener('click', e => { if (e.target === pizzaModalOverlay) closePizzaModal(); });
+
+// Add to cart from modal
+pizzaModalAddBtn.addEventListener('click', addToCartFromModal);
+
+function addToCartFromModal() {
+  if (!_modalProduct || !_modalSizeKey) return;
+  const product  = _modalProduct;
+  const sizeKey  = _modalSizeKey;
+  const sizeInfo = sizes[sizeKey];
+  const products = getProducts();
+  const stock    = Number(products.find(p => p.id === product.id)?.stock?.[sizeKey] || 0);
+  if (stock < 1) return toastMessage('Ese sabor está agotado.');
+
+  const extras    = getExtras();
+  const extrasArr = Object.entries(_modalExtras)
+    .filter(([, qty]) => qty > 0)
+    .map(([extId, qty]) => {
+      const ex = extras.find(e => e.id === extId);
+      return ex ? { id: extId, name: ex.name, qty, unitPrice: ex.price, totalPrice: ex.price * qty } : null;
+    })
+    .filter(Boolean);
+
+  const isHalf  = !!_modalHalf2;
+  const basePrice = Number(product.prices[sizeKey] || 0);
+  const half2Price = isHalf ? Number(_modalHalf2.prices[sizeKey] || 0) : 0;
+  const pizzaPrice = isHalf ? Math.max(basePrice, half2Price) : basePrice;
+  const extrasPrice = extrasArr.reduce((s, e) => s + e.totalPrice, 0);
+  const totalPrice = pizzaPrice + extrasPrice;
+
+  const baseCost  = Number(product?.costs?.[sizeKey] || 0);
+
+  let displayName = product.name;
+  if (isHalf) displayName = `½ ${product.name} + ½ ${_modalHalf2.name}`;
 
   cart.push({
-    lineId: crypto.randomUUID(),
+    lineId:    crypto.randomUUID(),
     productId: product.id,
-    name: product.name,
+    name:      displayName,
     sizeKey,
     sizeLabel: `${sizeInfo.shortLabel} (${sizeInfo.subtitle})`,
-    price: Number(product.prices[sizeKey] || 0),
-    cost: Number(product?.costs?.[sizeKey] || 0),
-    removed
+    price:     totalPrice,
+    cost:      baseCost,
+    removed:   [..._modalRemoved],
+    extras:    extrasArr,
+    isHalf,
+    half1Name: isHalf ? product.name : null,
+    half2Name: isHalf ? _modalHalf2.name : null,
   });
+
   renderCart();
-  toastMessage(`${product.name} ${sizeInfo.shortLabel.toLowerCase()} agregada.`);
+  closePizzaModal();
+  const label = isHalf ? 'Pizza mitad y mitad' : product.name;
+  toastMessage(`${label} ${sizeInfo.shortLabel.toLowerCase()} agregada al pedido. 🍕`);
 }
+
+// Legacy placeholder to avoid reference errors from old code
+function addToCart() {}
 
 function removeFromCart(lineId) {
   cart = cart.filter((item) => item.lineId !== lineId);
@@ -238,19 +461,31 @@ function renderCart() {
     cartItems.textContent = 'Aún no has agregado productos.';
   } else {
     cartItems.className = 'cart-items';
-    cartItems.innerHTML = cart.map((item) => `
+    cartItems.innerHTML = cart.map((item) => {
+      const extrasHtml = item.extras && item.extras.length
+        ? `<div class="cart-extras">${item.extras.map(e => `<span class="cart-extra-chip">+${e.qty} ${escapeHTML(e.name)} <em>${money(e.totalPrice)}</em></span>`).join('')}</div>`
+        : '';
+      const halfBadge = item.isHalf
+        ? `<span class="half-badge">🍕 Mitad y Mitad</span>`
+        : '';
+      const removedStr = item.removed && item.removed.length
+        ? `<div class="menu-meta">Sin: ${escapeHTML(item.removed.join(', '))}</div>`
+        : '';
+      return `
       <div class="cart-row">
         <div class="order-header">
           <div>
+            ${halfBadge}
             <strong>${escapeHTML(item.name)}</strong>
             <div class="menu-meta">${escapeHTML(item.sizeLabel)}</div>
           </div>
           <button class="mini-btn danger" data-remove-id="${item.lineId}">Quitar</button>
         </div>
-        <div class="menu-meta">${item.removed.length ? `Sin: ${escapeHTML(item.removed.join(', '))}` : 'Sin cambios'}</div>
+        ${removedStr}
+        ${extrasHtml}
         <div class="order-footer"><span>${money(item.price)}</span></div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
     cartItems.querySelectorAll('[data-remove-id]').forEach((btn) => btn.addEventListener('click', () => removeFromCart(btn.dataset.removeId)));
   }
 
@@ -330,6 +565,13 @@ function renderCoupons() {
 
 // Mensaje que manda el ADMIN al restaurante (notificación interna)
 function buildWhatsappMessage(order) {
+  const itemLines = order.items.map((item, index) => {
+    let line = `${index + 1}. ${item.name} - ${item.sizeLabel}`;
+    if (item.removed && item.removed.length) line += ` - Sin ${item.removed.join(', ')}`;
+    if (item.extras && item.extras.length) line += ` - Extras: ${item.extras.map(e => `${e.qty}x ${e.name}`).join(', ')}`;
+    line += ` - ${money(item.price)}`;
+    return line;
+  });
   return [
     `Hola, llegó un nuevo pedido para ${cfg.restaurantName}.`,
     `Pedido: ${order.id}`,
@@ -337,7 +579,7 @@ function buildWhatsappMessage(order) {
     `Ubicación: ${order.customer.complex}, ${order.customer.tower}, apto ${order.customer.apartment}`,
     `Método de Pago: ${order.paymentMethod === 'efectivo' ? '💵 Efectivo' : (order.paymentMethod === 'qr' ? '📱 App/QR (Comprobante adjunto en el Admin Panel)' : '🔑 Bre-B (Comprobante adjunto en el Admin Panel)')}`,
     'Productos:',
-    ...order.items.map((item, index) => `${index + 1}. ${item.name} - ${item.sizeLabel} - ${item.removed.length ? `Sin ${item.removed.join(', ')}` : 'Completa'} - ${money(item.price)}`),
+    ...itemLines,
     `Notas: ${order.notes || 'Sin notas'}`,
     `Total: ${money(order.total)}`
   ].join('\n');
