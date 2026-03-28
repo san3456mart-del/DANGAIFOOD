@@ -205,8 +205,9 @@
   ];
 
   function deriveCosts(prices) {
+    // Costo de referencia = 70% del precio (ganancia = 30%)
     return Object.fromEntries(
-      Object.entries(prices).map(([key, value]) => [key, Math.round((value * 0.48) / 100) * 100])
+      Object.entries(prices).map(([key, value]) => [key, Math.round((value * 0.70) / 100) * 100])
     );
   }
 
@@ -228,6 +229,7 @@
     sizes,
     additionalIngredients,
     defaultExtras,
+    profitRate: 0.30,   // 30 % de la venta total
     storageKeys: {
       profile: 'restaurant_profile_v2',
       products: 'restaurant_products_v2',
@@ -236,7 +238,9 @@
       settings: 'restaurant_settings_v2',
       adminSession: 'restaurant_admin_session_v2',
       lastOrderSound: 'restaurant_last_order_sound_v2',
-      extras: 'restaurant_extras_v2'
+      extras: 'restaurant_extras_v2',
+      expenses: 'restaurant_expenses_v2',
+      cashCounts: 'restaurant_cash_counts_v2'
     },
     defaultProducts
   };

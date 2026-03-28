@@ -880,3 +880,207 @@ th { color: var(--muted); font-size: .85rem; text-transform: uppercase; letter-s
 }
 .addl-row-actions { display: flex; gap: 8px; }
 
+/* ═══════════════════════════════════════════════════════════════
+   CIERRE DE CAJA — CASH REGISTER SYSTEM
+═══════════════════════════════════════════════════════════════ */
+
+/* Top bar */
+.cr-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+/* Main 2-col grid */
+.cr-main-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 20px;
+  align-items: start;
+}
+.cr-left-col, .cr-right-col { display: flex; flex-direction: column; gap: 20px; }
+@media (max-width: 900px) {
+  .cr-main-grid { grid-template-columns: 1fr; }
+}
+
+/* Summary box blocks */
+.cr-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cr-date-badge {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--secondary);
+  text-transform: capitalize;
+}
+
+.cr-block {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--line);
+}
+.cr-block:last-child { border-bottom: none; }
+.cr-block-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+.cr-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 0.92rem;
+  border-bottom: 1px dashed var(--line);
+  gap: 12px;
+}
+.cr-row:last-child { border-bottom: none; }
+.cr-row span { color: var(--muted); font-weight: 500; }
+.cr-row strong { font-weight: 800; color: var(--secondary); font-size: 1rem; }
+.cr-row.accent { background: rgba(255,69,0,0.03); border-radius: 10px; padding: 8px 10px; margin: 4px -10px; }
+.cr-row.cr-total {
+  background: linear-gradient(135deg, rgba(16,185,129,0.06) 0%, rgba(16,185,129,0.02) 100%);
+  border-radius: 10px;
+  padding: 10px;
+  margin: 8px -10px 0;
+  border: none !important;
+}
+.cr-row.cr-total span { color: var(--secondary); font-weight: 700; }
+.cr-row.cr-total strong { font-size: 1.25rem; }
+
+.cr-diff-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: rgba(0,0,0,0.03);
+  border-radius: 8px;
+  text-align: center;
+}
+
+/* Order rows inside summary */
+.cr-order-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--line);
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.cr-order-row:last-child { border-bottom: none; }
+.cr-order-id {
+  font-weight: 800;
+  font-size: 0.88rem;
+  color: var(--secondary);
+  font-variant-numeric: tabular-nums;
+}
+.cr-pay-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.cr-pay-chip.cash { background: rgba(16,185,129,0.1); color: var(--success); }
+.cr-pay-chip.digital { background: rgba(99,102,241,0.1); color: #4f46e5; }
+
+/* Arqueo card */
+.cr-arqueo-card { background: linear-gradient(160deg, #fff8f5 0%, #fff 70%); border: 1px solid rgba(255,69,0,0.12) !important; }
+
+/* Expenses list */
+.exp-cat-header {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--muted);
+  padding: 12px 0 6px;
+  border-top: 1px solid var(--line);
+  margin-top: 4px;
+}
+.exp-cat-header:first-child { border-top: none; margin-top: 0; }
+.exp-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: #f9fafb;
+  border-radius: 12px;
+  margin-bottom: 6px;
+  border: 1px solid transparent;
+  transition: .15s;
+  gap: 12px;
+}
+.exp-row:hover { background: #fff3f0; border-color: rgba(255,69,0,0.12); }
+.exp-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.exp-desc { font-size: 0.9rem; font-weight: 600; color: var(--secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.exp-time { font-size: 0.75rem; color: var(--muted); }
+.exp-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.exp-amount { font-size: 0.95rem; font-weight: 800; color: var(--danger); }
+
+/* History cards */
+.cr-history-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  transition: box-shadow .2s;
+}
+.cr-history-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.08); }
+.chc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f9fafb, #fff);
+  border-bottom: 1px solid var(--line);
+}
+.chc-date { font-size: 0.95rem; font-weight: 800; color: var(--secondary); text-transform: capitalize; }
+.chc-time { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+.chc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+}
+.chc-item {
+  padding: 12px 16px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.chc-item:nth-child(3n) { border-right: none; }
+.chc-item span { font-size: 0.72rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.chc-item strong { font-size: 1rem; font-weight: 800; color: var(--secondary); }
+.chc-item.chc-highlight { background: rgba(245,158,11,0.06); }
+.chc-item.full { grid-column: 1 / -1; border-right: none; }
+.chc-item em { font-style: italic; color: var(--muted); font-size: 0.88rem; }
+.chc-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+}
+@media (max-width: 600px) {
+  .chc-grid { grid-template-columns: repeat(2, 1fr); }
+  .chc-item:nth-child(3n) { border-right: 1px solid var(--line); }
+  .chc-item:nth-child(2n) { border-right: none; }
+}

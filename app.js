@@ -635,7 +635,7 @@ async function submitOrder() {
       couponId: appliedCouponId || null,
       total: subtotal + getDeliveryFee() - discount,
       cost: totalCost,
-      estimatedProfit: subtotal - totalCost - discount,
+      estimatedProfit: Math.round((subtotal + getDeliveryFee() - discount) * (cfg.profitRate || 0.30)),
       paymentMethod,
       receiptBase64: paymentReceiptBase64
     };

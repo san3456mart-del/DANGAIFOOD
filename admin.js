@@ -401,10 +401,12 @@ function renderDashboard() {
   const orders = getOrders();
   const active = orders.filter((o) => o.status !== 'entregado').length;
   const delivered = orders.filter((o) => o.status === 'entregado');
+  const totalIncome = delivered.reduce((sum, o) => sum + Number(o.total || 0), 0);
+  const totalProfit = Math.round(totalIncome * (cfg.profitRate || 0.30));
   activeOrdersCount.textContent = active;
   deliveredOrdersCount.textContent = delivered.length;
-  incomeValue.textContent = money(delivered.reduce((sum, o) => sum + Number(o.total || 0), 0));
-  profitValue.textContent = money(delivered.reduce((sum, o) => sum + Number(o.estimatedProfit || 0), 0));
+  incomeValue.textContent = money(totalIncome);
+  profitValue.textContent = money(totalProfit);
 }
 
 function renderPendingPayments() {
@@ -873,3 +875,295 @@ if (cancelAddlBtn) cancelAddlBtn.addEventListener('click', resetAddlForm);
 
 resetProductForm();
 checkSession();
+
+/* ══════════════════════════════════════════════════════════════════════
+   SISTEMA DE CIERRE DE CAJA DIARIO
+══════════════════════════════════════════════════════════════════════ */
+
+// ─── Helpers de fecha ───────────────────────────────────────────────
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+function dateStr(d) {
+  // Returns YYYY-MM-DD from an ISO string or Date
+  return new Date(d).toISOString().slice(0, 10);
+}
+function formatDateLong(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+// ─── Storage helpers ─────────────────────────────────────────────────
+function getExpenses() { return getJson(storage.expenses, []); }
+function saveExpensesStore(arr) { setJson(storage.expenses, arr); }
+function getCashCounts() { return getJson(storage.cashCounts, []); }
+function saveCashCounts(arr) { setJson(storage.cashCounts, arr); }
+
+// ─── DOM refs (declared lazily — only exist when page is loaded) ─────
+const cashDateInput      = document.getElementById('cashDateInput');
+const expenseForm        = document.getElementById('expenseForm');
+const expenseDesc        = document.getElementById('expenseDesc');
+const expenseAmt         = document.getElementById('expenseAmt');
+const expenseCat         = document.getElementById('expenseCat');
+const expensesList       = document.getElementById('expensesList');
+const cashSummaryBox     = document.getElementById('cashSummaryBox');
+const cashCountInput     = document.getElementById('cashCountInput');
+const closeCashBtn       = document.getElementById('closeCashBtn');
+const cashHistoryList    = document.getElementById('cashHistoryList');
+
+// ─── Core render ─────────────────────────────────────────────────────
+function renderCashRegister() {
+  if (!cashDateInput) return;
+  const date = cashDateInput.value || todayStr();
+  _renderDaySummary(date);
+  _renderDayExpenses(date);
+  _renderCashHistory();
+}
+
+function _renderDaySummary(date) {
+  if (!cashSummaryBox) return;
+
+  const RATE = cfg.profitRate || 0.30;
+  const allOrders = getOrders();
+  const dayOrders = allOrders.filter(o =>
+    o.status === 'entregado' && dateStr(o.createdAt) === date
+  );
+
+  const totalSales    = dayOrders.reduce((s, o) => s + Number(o.total || 0), 0);
+  const cashSales     = dayOrders.filter(o => o.paymentMethod === 'efectivo').reduce((s, o) => s + Number(o.total || 0), 0);
+  const digitalSales  = totalSales - cashSales;
+  const grossProfit   = Math.round(totalSales * RATE);
+  const totalExpenses = getExpenses().filter(e => e.date === date).reduce((s, e) => s + Number(e.amount || 0), 0);
+  const netProfit     = grossProfit - totalExpenses;
+  const cashCounted   = Number(cashCountInput?.value || 0);
+  const cashDiff      = cashCounted - cashSales;
+
+  const diffColor = cashDiff > 0 ? 'var(--success)' : cashDiff < 0 ? 'var(--danger)' : 'var(--muted)';
+  const netColor  = netProfit >= 0 ? 'var(--success)' : 'var(--danger)';
+
+  cashSummaryBox.innerHTML = `
+    <!-- ─ HEADER ─ -->
+    <div class="cr-section-header">
+      <span class="cr-date-badge">${formatDateLong(date)}</span>
+      <span class="pill ${dayOrders.length ? 'success' : ''}">${dayOrders.length} pedido${dayOrders.length !== 1 ? 's' : ''} entregado${dayOrders.length !== 1 ? 's' : ''}</span>
+    </div>
+
+    <!-- ─ VENTAS ─ -->
+    <div class="cr-block">
+      <p class="cr-block-title">💰 Resumen de Ventas</p>
+      <div class="cr-row"><span>Ingresos totales del día</span><strong>${money(totalSales)}</strong></div>
+      <div class="cr-row accent"><span>📦 Efectivo recibido</span><strong>${money(cashSales)}</strong></div>
+      <div class="cr-row"><span>📱 Pagos digitales (QR / Bre-B)</span><strong>${money(digitalSales)}</strong></div>
+    </div>
+
+    <!-- ─ RENTABILIDAD ─ -->
+    <div class="cr-block">
+      <p class="cr-block-title">📊 Rentabilidad (${Math.round(RATE * 100)}%)</p>
+      <div class="cr-row"><span>Ganancia bruta (${Math.round(RATE * 100)}% de ventas)</span><strong style="color:var(--success)">${money(grossProfit)}</strong></div>
+      <div class="cr-row"><span>Total gastos / insumos del día</span><strong style="color:var(--danger)">- ${money(totalExpenses)}</strong></div>
+      <div class="cr-row cr-total"><span>Ganancia neta</span><strong style="color:${netColor}">${money(netProfit)}</strong></div>
+    </div>
+
+    <!-- ─ ARQUEO ─ -->
+    <div class="cr-block">
+      <p class="cr-block-title">🏦 Arqueo de Caja</p>
+      <div class="cr-row"><span>Efectivo esperado en caja</span><strong>${money(cashSales)}</strong></div>
+      <div class="cr-row"><span>Efectivo físico contado</span><strong>${money(cashCounted)}</strong></div>
+      <div class="cr-row cr-diff" style="border-top:2px solid var(--line);margin-top:8px;padding-top:8px;">
+        <span>Diferencia</span>
+        <strong style="color:${diffColor}">${cashDiff >= 0 ? '+' : ''}${money(cashDiff)}</strong>
+      </div>
+      <div class="cr-diff-label" style="color:${diffColor}">
+        ${cashDiff > 0 ? '✅ Hay sobrante en caja' : cashDiff < 0 ? '⚠️ Falta efectivo — revisar' : cashCounted > 0 ? '✅ Caja cuadrada exactamente' : '⏳ Ingresa el efectivo contado abajo'}
+      </div>
+    </div>
+
+    <!-- ─ PEDIDOS DEL DÍA ─ -->
+    ${dayOrders.length ? `
+    <div class="cr-block">
+      <p class="cr-block-title">🍕 Detalle de Pedidos</p>
+      ${dayOrders.map(o => `
+        <div class="cr-order-row">
+          <div>
+            <span class="cr-order-id">${escapeHTML(o.id)}</span>
+            <span style="color:var(--muted);font-size:0.78rem;"> · ${escapeHTML(o.customer?.name || '—')}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="cr-pay-chip ${o.paymentMethod === 'efectivo' ? 'cash' : 'digital'}">${o.paymentMethod === 'efectivo' ? '💵' : '📱'} ${o.paymentMethod === 'efectivo' ? 'Efectivo' : o.paymentMethod.toUpperCase()}</span>
+            <strong>${money(o.total)}</strong>
+          </div>
+        </div>
+      `).join('')}
+    </div>` : ''}
+  `;
+
+  // Store computed values for the close button
+  cashSummaryBox.dataset.totalSales   = totalSales;
+  cashSummaryBox.dataset.cashSales    = cashSales;
+  cashSummaryBox.dataset.digitalSales = digitalSales;
+  cashSummaryBox.dataset.grossProfit  = grossProfit;
+  cashSummaryBox.dataset.totalExpenses = totalExpenses;
+  cashSummaryBox.dataset.netProfit    = netProfit;
+  cashSummaryBox.dataset.ordersCount  = dayOrders.length;
+}
+
+function _renderDayExpenses(date) {
+  if (!expensesList) return;
+  const dayExpenses = getExpenses().filter(e => e.date === date);
+  const total = dayExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
+
+  if (!dayExpenses.length) {
+    expensesList.innerHTML = '<div class="empty-state" style="padding:24px;">Sin gastos registrados para este día.</div>';
+  } else {
+    // Group by category
+    const groups = {};
+    dayExpenses.forEach(e => {
+      const cat = e.category || 'Otros';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(e);
+    });
+
+    expensesList.innerHTML = Object.entries(groups).map(([cat, items]) => `
+      <div class="exp-cat-header">${escapeHTML(cat)}</div>
+      ${items.map(e => `
+        <div class="exp-row">
+          <div class="exp-info">
+            <span class="exp-desc">${escapeHTML(e.description)}</span>
+            <span class="exp-time">${new Date(e.createdAt).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</span>
+          </div>
+          <div class="exp-actions">
+            <strong class="exp-amount">- ${money(e.amount)}</strong>
+            <button class="mini-btn danger" data-del-expense="${e.id}" title="Eliminar">🗑️</button>
+          </div>
+        </div>
+      `).join('')}
+    `).join('');
+
+    expensesList.querySelectorAll('[data-del-expense]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        saveExpensesStore(getExpenses().filter(e => e.id !== btn.dataset.delExpense));
+        renderCashRegister();
+        showToast('Gasto eliminado.');
+      });
+    });
+  }
+
+  // Total footer
+  const totalEl = document.getElementById('expensesTotalLine');
+  if (totalEl) totalEl.innerHTML = `Total gastos: <strong>${money(total)}</strong>`;
+}
+
+function _renderCashHistory() {
+  if (!cashHistoryList) return;
+  const counts = getCashCounts().slice().reverse();
+  if (!counts.length) {
+    cashHistoryList.innerHTML = '<div class="empty-state" style="padding:24px;">Sin cierres registrados.</div>';
+    return;
+  }
+  cashHistoryList.innerHTML = counts.map(c => {
+    const diffColor = c.cashDifference > 0 ? 'var(--success)' : c.cashDifference < 0 ? 'var(--danger)' : 'var(--muted)';
+    return `
+    <div class="cr-history-card">
+      <div class="chc-header">
+        <span class="chc-date">${formatDateLong(c.date)}</span>
+        <span class="chc-time">${new Date(c.closedAt).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</span>
+      </div>
+      <div class="chc-grid">
+        <div class="chc-item"><span>Ventas</span><strong>${money(c.totalSales)}</strong></div>
+        <div class="chc-item"><span>Efectivo</span><strong>${money(c.cashSales)}</strong></div>
+        <div class="chc-item"><span>Digital</span><strong>${money(c.digitalSales)}</strong></div>
+        <div class="chc-item"><span>Gastos</span><strong style="color:var(--danger)">${money(c.totalExpenses)}</strong></div>
+        <div class="chc-item"><span>Ganancia bruta (30%)</span><strong style="color:var(--success)">${money(c.grossProfit)}</strong></div>
+        <div class="chc-item"><span>Ganancia neta</span><strong style="color:${c.netProfit >= 0 ? 'var(--success)' : 'var(--danger)'}">${money(c.netProfit)}</strong></div>
+        <div class="chc-item"><span>Esperado en caja</span><strong>${money(c.cashSales)}</strong></div>
+        <div class="chc-item"><span>Contado en caja</span><strong>${money(c.cashCounted)}</strong></div>
+        <div class="chc-item ${c.cashDifference !== 0 ? 'chc-highlight' : ''}"><span>Diferencia</span><strong style="color:${diffColor}">${c.cashDifference >= 0 ? '+' : ''}${money(c.cashDifference)}</strong></div>
+        ${c.notes ? `<div class="chc-item full"><span>Notas</span><em>${escapeHTML(c.notes)}</em></div>` : ''}
+      </div>
+      <div class="chc-footer">
+        <span class="pill">${c.ordersCount} pedido${c.ordersCount !== 1 ? 's' : ''}</span>
+        <button class="mini-btn danger" data-del-closing="${c.id}" style="font-size:0.78rem;">🗑️ Eliminar registro</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  cashHistoryList.querySelectorAll('[data-del-closing]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!confirm('¿Eliminar este registro de cierre?')) return;
+      saveCashCounts(getCashCounts().filter(c => c.id !== btn.dataset.delClosing));
+      _renderCashHistory();
+      showToast('Registro eliminado.');
+    });
+  });
+}
+
+// ─── Event listeners ─────────────────────────────────────────────────
+if (cashDateInput) {
+  cashDateInput.value = todayStr();
+  cashDateInput.addEventListener('change', renderCashRegister);
+}
+
+if (expenseForm) {
+  expenseForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const desc = expenseDesc?.value.trim();
+    const amt  = Number(expenseAmt?.value);
+    const cat  = expenseCat?.value.trim() || 'Otros';
+    const date = cashDateInput?.value || todayStr();
+
+    if (!desc) return showToast('Describe el gasto.');
+    if (!amt || amt <= 0) return showToast('Ingresa un monto válido.');
+
+    const expenses = getExpenses();
+    expenses.push({ id: `exp-${Date.now()}`, date, description: desc, amount: amt, category: cat, createdAt: new Date().toISOString() });
+    saveExpensesStore(expenses);
+    expenseForm.reset();
+    if (expenseCat) expenseCat.value = 'Insumos';
+    renderCashRegister();
+    showToast('Gasto registrado.');
+  });
+}
+
+if (cashCountInput) {
+  cashCountInput.addEventListener('input', () => {
+    const date = cashDateInput?.value || todayStr();
+    _renderDaySummary(date);
+  });
+}
+
+if (closeCashBtn) {
+  closeCashBtn.addEventListener('click', () => {
+    const date = cashDateInput?.value || todayStr();
+    const ds   = cashSummaryBox?.dataset;
+    if (!ds || !Number(ds.ordersCount)) return showToast('No hay pedidos entregados en este día para cerrar.');
+    if (!confirm(`¿Cerrar la caja del ${date}? Esta acción guarda el registro permanentemente.`)) return;
+
+    const notesEl = document.getElementById('cashClosingNotes');
+    const record = {
+      id:            `close-${Date.now()}`,
+      date,
+      totalSales:    Number(ds.totalSales    || 0),
+      cashSales:     Number(ds.cashSales     || 0),
+      digitalSales:  Number(ds.digitalSales  || 0),
+      grossProfit:   Number(ds.grossProfit   || 0),
+      totalExpenses: Number(ds.totalExpenses || 0),
+      netProfit:     Number(ds.netProfit     || 0),
+      cashCounted:   Number(cashCountInput?.value || 0),
+      cashDifference: Number(cashCountInput?.value || 0) - Number(ds.cashSales || 0),
+      ordersCount:   Number(ds.ordersCount   || 0),
+      notes:         notesEl?.value.trim() || '',
+      closedAt:      new Date().toISOString()
+    };
+
+    const counts = getCashCounts();
+    counts.push(record);
+    saveCashCounts(counts);
+    if (cashCountInput) cashCountInput.value = '';
+    if (notesEl) notesEl.value = '';
+    renderCashRegister();
+    showToast(`✅ Caja del ${date} cerrada y guardada.`);
+  });
+}
+
+// Update renderAll to include cash register
+const _origRenderAll = renderAll;

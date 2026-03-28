@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2" />
+  <link rel="stylesheet" href="styles.css?v=4" />
 </head>
 <body class="admin-body">
   <div class="video-shell">
@@ -68,6 +68,7 @@
         <button class="tab-btn" data-tab="tabAdditionals">🧀 Adicionales</button>
         <button class="tab-btn" data-tab="tabCustomers">Clientes</button>
         <button class="tab-btn" data-tab="tabSettings">Pagos (QR / Bre-B)</button>
+        <button class="tab-btn" data-tab="tabCashRegister">💰 Cierre de Caja</button>
       </div>
 
       <section class="tab-panel" id="ordersTab">
@@ -296,6 +297,124 @@
           </table>
         </div>
       </section>
+      <!-- ═══════════════════════════════════════════════════════
+           CIERRE DE CAJA DIARIO
+      ═══════════════════════════════════════════════════════ -->
+      <section id="tabCashRegister" class="tab-panel hidden">
+
+        <!-- TOP: Date picker + title -->
+        <div class="cr-topbar card">
+          <div>
+            <p class="section-kicker">Operación</p>
+            <h2>💰 Cierre de Caja Diario</h2>
+            <p class="helper-text" style="margin-top:4px;">Arqueo completo · Gastos del día · Ganancia neta.</p>
+          </div>
+          <label style="display:flex;flex-direction:column;gap:6px;min-width:160px;">
+            <span style="font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Fecha</span>
+            <input type="date" id="cashDateInput"
+              style="border:1.5px solid var(--line);border-radius:12px;padding:10px 14px;font-size:1rem;font-weight:700;color:var(--secondary);background:#f9fafb;outline:none;" />
+          </label>
+        </div>
+
+        <div class="cr-main-grid">
+
+          <!-- LEFT COLUMN: Resumen + Arqueo -->
+          <div class="cr-left-col">
+
+            <!-- Resumen dinámico (filled by JS) -->
+            <div class="card" id="cashSummaryBox" style="padding:0;">
+              <div style="padding:32px;text-align:center;color:var(--muted);">
+                <div style="font-size:2.5rem;margin-bottom:8px;">📊</div>
+                <strong>Selecciona una fecha para ver el resumen</strong>
+              </div>
+            </div>
+
+            <!-- Arqueo de Caja (user input) -->
+            <div class="card cr-arqueo-card">
+              <p class="section-kicker">Arqueo</p>
+              <h2 style="font-size:1.15rem;margin:4px 0 16px;">🏦 Conteo de Efectivo</h2>
+              <label style="display:flex;flex-direction:column;gap:6px;">
+                <span style="font-size:0.85rem;font-weight:700;color:var(--muted);">Efectivo contado físicamente ($)</span>
+                <input type="number" id="cashCountInput" min="0" step="100" placeholder="Ej. 75000"
+                  style="border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;font-size:1.25rem;font-weight:800;color:var(--secondary);background:#fff;outline:none;text-align:right;" />
+              </label>
+              <p class="helper-text" style="margin-top:8px;">Ingresa el total de billetes y monedas que tienes en caja. Se comparará con el efectivo esperado de pedidos pagados en efectivo.</p>
+
+              <label style="display:flex;flex-direction:column;gap:6px;margin-top:16px;">
+                <span style="font-size:0.85rem;font-weight:700;color:var(--muted);">Observaciones del cierre (opcional)</span>
+                <textarea id="cashClosingNotes" rows="2" placeholder="Ej. Se pagó domicilio de insumos en efectivo..."
+                  style="border:1.5px solid var(--line);border-radius:14px;padding:12px 16px;font-size:0.92rem;color:var(--text);background:#f9fafb;resize:none;outline:none;font-family:inherit;"></textarea>
+              </label>
+
+              <button id="closeCashBtn" class="primary-btn" style="width:100%;margin-top:20px;padding:16px;font-size:1rem;">
+                🔒 Cerrar Caja y Guardar Registro
+              </button>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN: Gastos + Historial -->
+          <div class="cr-right-col">
+
+            <!-- Expenses form -->
+            <div class="card">
+              <div class="section-title-row" style="margin-bottom:16px;">
+                <div>
+                  <p class="section-kicker">Insumos y Gastos</p>
+                  <h2 style="font-size:1.15rem;">Registrar Gasto del Día</h2>
+                </div>
+              </div>
+              <form id="expenseForm" class="grid-form" style="margin-top:0;">
+                <label class="full-width">Descripción del gasto
+                  <input id="expenseDesc" required placeholder="Ej. Harina, caja de mozzarella, gas..." />
+                </label>
+                <label>Monto ($)
+                  <input id="expenseAmt" type="number" min="0" step="100" required placeholder="Ej. 15000" />
+                </label>
+                <label>Categoría
+                  <select id="expenseCat"
+                    style="border:1px solid var(--line);background:#f9fafb;border-radius:14px;padding:16px;color:var(--text);outline:none;font-size:0.97rem;font-family:inherit;">
+                    <option value="Insumos">🧂 Insumos</option>
+                    <option value="Empaque">📦 Empaque</option>
+                    <option value="Domicilio">🛵 Domicilio</option>
+                    <option value="Servicios">💡 Servicios</option>
+                    <option value="Personal">👤 Personal</option>
+                    <option value="Otros">📋 Otros</option>
+                  </select>
+                </label>
+                <div class="wizard-actions-row full-width" style="margin-top:0;">
+                  <button type="submit" class="primary-btn" style="flex:1;">➕ Agregar Gasto</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Expenses list -->
+            <div class="card">
+              <div class="section-title-row" style="margin-bottom:12px;">
+                <div>
+                  <p class="section-kicker">Lista</p>
+                  <h2 style="font-size:1.15rem;">Gastos Registrados</h2>
+                </div>
+                <div id="expensesTotalLine" style="font-size:0.9rem;font-weight:700;color:var(--danger);">Total: $0</div>
+              </div>
+              <div id="expensesList"></div>
+            </div>
+
+            <!-- History -->
+            <div class="card">
+              <div class="section-title-row" style="margin-bottom:12px;">
+                <div>
+                  <p class="section-kicker">Historial</p>
+                  <h2 style="font-size:1.15rem;">Cierres Anteriores</h2>
+                </div>
+                <span class="pill accent">Permanente</span>
+              </div>
+              <div id="cashHistoryList"></div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
     </section>
 
   </main>
@@ -349,8 +468,8 @@
 
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
-  <script src="data.js?v=3"></script>
-  <script src="firebase-init.js?v=3"></script>
-  <script src="admin.js?v=3"></script>
+  <script src="data.js?v=4"></script>
+  <script src="firebase-init.js?v=4"></script>
+  <script src="admin.js?v=4"></script>
 </body>
 </html>
