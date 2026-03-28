@@ -328,6 +328,7 @@ function renderCoupons() {
   });
 }
 
+// Mensaje que manda el ADMIN al restaurante (notificación interna)
 function buildWhatsappMessage(order) {
   return [
     `Hola, llegó un nuevo pedido para ${cfg.restaurantName}.`,
@@ -339,6 +340,24 @@ function buildWhatsappMessage(order) {
     ...order.items.map((item, index) => `${index + 1}. ${item.name} - ${item.sizeLabel} - ${item.removed.length ? `Sin ${item.removed.join(', ')}` : 'Completa'} - ${money(item.price)}`),
     `Notas: ${order.notes || 'Sin notas'}`,
     `Total: ${money(order.total)}`
+  ].join('\n');
+}
+
+// Mensaje que manda el CLIENTE al restaurante para preguntar por su pedido
+function buildClientWhatsappMessage(order) {
+  const items = order.items.map((item, i) =>
+    `${i + 1}. ${item.name} (${item.sizeLabel})${item.removed?.length ? ` sin ${item.removed.join(', ')}` : ''}`
+  ).join('\n');
+  return [
+    `¡Hola! 👋 Soy *${order.customer.name}* y quisiera consultar el estado de mi pedido.`,
+    ``,
+    `🧾 *Número de orden:* ${order.id}`,
+    `📦 *Lo que pedí:*`,
+    items,
+    ``,
+    `💰 *Total:* ${money(order.total)}`,
+    ``,
+    `¿Me podrían indicar en qué estado va mi pedido? Muchas gracias 🙏`
   ].join('\n');
 }
 
@@ -690,7 +709,9 @@ function renderOrdersHistory() {
     const orders = getJson(storage.orders, []);
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
-    const url = `https://wa.me/${cfg.whatsappNumber}?text=${encodeURIComponent(buildWhatsappMessage(order))}`;
+    // El número del restaurante para que el CLIENTE le escriba
+    const restaurantNumber = '573022562953';
+    const url = `https://wa.me/${restaurantNumber}?text=${encodeURIComponent(buildClientWhatsappMessage(order))}`;
     window.open(url, '_blank');
   };
 
