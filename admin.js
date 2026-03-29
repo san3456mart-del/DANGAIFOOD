@@ -498,6 +498,11 @@ function renderCustomers() {
             data-send-coupon-client-name="${escapeHTML(user.name)}">
             🎟️ Enviar cupón
           </button>
+          ${(activeCoupons.length > 0 && user.phone) ? `
+          <a class="mini-btn" style="background:#10b981;color:#fff;border:none;border-radius:12px;padding:8px 14px;white-space:nowrap;text-decoration:none;"
+            href="https://wa.me/57${user.phone.replace(/\D/g, '')}?text=${encodeURIComponent('Hola ' + user.name + ', tienes un cupón de descuento disponible en tu app de Dangai Food 🍕. ¡Úsalo en tu próximo pedido! 👉 https://dangaifood2026.netlify.app/')}" target="_blank">
+            💬 Avisar x WS
+          </a>` : ''}
           <button class="mini-btn danger" style="border-radius:12px;padding:8px 14px;white-space:nowrap;"
             data-delete-client-id="${user.clientId}">
             🗑️ Eliminar
