@@ -592,7 +592,7 @@ loginForm.addEventListener('submit', async (e) => {
   try {
     const hash = await hashPass(pass);
     // Verificar que el usuario sea admin y que la contraseña coincida con familia12 a través de su hash
-    if (user === 'admin' && hash === '8072db95acfdbcc1ba779cc6738253eb8fd3b05b691dc181af6ab1fe41f802f3') {
+    if (user === 'dangai2026_admin' && hash === '8072db95acfdbcc1ba779cc6738253eb8fd3b05b691dc181af6ab1fe41f802f3') { // familia12
       localStorage.setItem(storage.adminSession, 'true');
       soundArmed = true;
       showToast('Bienvenido al panel.');
