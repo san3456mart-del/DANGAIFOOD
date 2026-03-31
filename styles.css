@@ -286,7 +286,8 @@ th { color: var(--muted); font-size: .85rem; text-transform: uppercase; letter-s
 .auth-back-btn:hover { background: #e5e7eb; color: var(--secondary); }
 
 /* Address columns */
-.auth-addr-cols { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.auth-addr-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 480px) { .auth-addr-cols { grid-template-columns: 1fr; } }
 .auth-field-hint { margin: 0 0 4px; font-size: 0.85rem; font-weight: 600; color: var(--muted); }
 
 /* ─── ORDER CARDS (Admin Real-Time) ─────────────────────────── */

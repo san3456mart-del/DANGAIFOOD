@@ -853,6 +853,8 @@ if (editProfileBtn) {
     localStorage.removeItem(storage.profile);
     setStep(1);
     toastMessage('Sesión cerrada.');
+    if (loginFormClient) loginFormClient.reset();
+    if (profileForm) profileForm.reset();
     loadProfile();
   });
 }
