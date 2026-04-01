@@ -4,6 +4,7 @@ const sizes = cfg.sizes;
 
 const guestForm = document.getElementById('guestForm');
 const editProfileBtn = document.getElementById('editProfileBtn');
+const skipToMenuBtn = document.getElementById('skipToMenuBtn');
 const profileStatus = document.getElementById('profileStatus');
 const sizeTabs = document.getElementById('sizeTabs');
 const activeSizeTitle = document.getElementById('activeSizeTitle');
@@ -735,16 +736,30 @@ if (editProfileBtn) {
 }
 
 goToConfirmBtn.addEventListener('click', () => {
-  if (!getJson(storage.profile, null)) return toastMessage('Primero guarda tus datos.');
+  if (!getJson(storage.profile, null)) {
+    toastMessage('¡Para ordenar, primero dinos a dónde enviamos!');
+    setStep(1);
+    return;
+  }
   if (!cart.length) return toastMessage('Agrega por lo menos una pizza antes de continuar.');
   setStep(3);
 });
 
 if (floatingCartGoBtn) {
   floatingCartGoBtn.addEventListener('click', () => {
-    if (!getJson(storage.profile, null)) return toastMessage('Primero guarda tus datos.');
+    if (!getJson(storage.profile, null)) {
+      toastMessage('¡Para ordenar, primero dinos a dónde enviamos!');
+      setStep(1);
+      return;
+    }
     if (!cart.length) return toastMessage('Agrega por lo menos una pizza antes de continuar.');
     setStep(3);
+  });
+}
+
+if (skipToMenuBtn) {
+  skipToMenuBtn.addEventListener('click', () => {
+    setStep(2);
   });
 }
 
