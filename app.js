@@ -5,8 +5,11 @@ const sizes = cfg.sizes;
 const profileForm = document.getElementById('profileForm');
 const tabLoginBtn = document.getElementById('tabLoginBtn');
 const tabRegisterBtn = document.getElementById('tabRegisterBtn');
+const tabGuestBtn = document.getElementById('tabGuestBtn');
 const loginView = document.getElementById('loginView');
 const registerView = document.getElementById('registerView');
+const guestView = document.getElementById('guestView');
+const guestForm = document.getElementById('guestForm');
 const loginFormClient = document.getElementById('loginFormClient');
 const editProfileBtn = document.getElementById('editProfileBtn');
 const profileStatus = document.getElementById('profileStatus');
@@ -128,7 +131,9 @@ function loadProfile() {
     if (editProfileBtn) editProfileBtn.classList.add('hidden');
     return false;
   }
-  if (statusEl) statusEl.textContent = profile.username;
+  if (statusEl) {
+    statusEl.textContent = profile.isGuest ? `Invitado: ${profile.name}` : profile.username;
+  }
   if (editProfileBtn) editProfileBtn.classList.remove('hidden');
   return true;
 }
@@ -689,20 +694,33 @@ async function submitOrder() {
 function showLogin() {
   tabLoginBtn.classList.add('active');
   tabRegisterBtn.classList.remove('active');
+  if (tabGuestBtn) tabGuestBtn.classList.remove('active');
   loginView.classList.remove('hidden');
   registerView.classList.add('hidden');
+  if (guestView) guestView.classList.add('hidden');
 }
 function showRegister() {
   tabRegisterBtn.classList.add('active');
   tabLoginBtn.classList.remove('active');
+  if (tabGuestBtn) tabGuestBtn.classList.remove('active');
   registerView.classList.remove('hidden');
   loginView.classList.add('hidden');
+  if (guestView) guestView.classList.add('hidden');
   goRegStep(1);
+}
+function showGuest() {
+  if (tabGuestBtn) tabGuestBtn.classList.add('active');
+  tabLoginBtn.classList.remove('active');
+  tabRegisterBtn.classList.remove('active');
+  if (guestView) guestView.classList.remove('hidden');
+  loginView.classList.add('hidden');
+  registerView.classList.add('hidden');
 }
 
 if (tabLoginBtn && tabRegisterBtn) {
   tabLoginBtn.addEventListener('click', showLogin);
   tabRegisterBtn.addEventListener('click', showRegister);
+  if (tabGuestBtn) tabGuestBtn.addEventListener('click', showGuest);
 }
 
 // Cross-links
@@ -847,6 +865,44 @@ profileForm.addEventListener('submit', async (e) => {
     btn.textContent = 'Registrarme y ordenar';
   }
 });
+
+if (guestForm) {
+  guestForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const btn = guestForm.querySelector('button[type="submit"]');
+    const name = document.getElementById('guestName').value.trim();
+    const phone = document.getElementById('guestPhone').value.trim();
+    const complex = document.getElementById('guestComplex').value.trim();
+    const tower = document.getElementById('guestTower').value.trim();
+    const apartment = document.getElementById('guestApartment').value.trim();
+
+    if (!name || !phone || !complex || !tower || !apartment) {
+      return toastMessage('Por favor completa todos los campos.');
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    const guestProfile = {
+      clientId: crypto.randomUUID(),
+      username: 'invitado_' + Date.now(),
+      name,
+      phone,
+      complex,
+      tower,
+      apartment,
+      isGuest: true
+    };
+    
+    localStorage.setItem(storage.profile, JSON.stringify(guestProfile));
+    loadProfile();
+    setStep(2);
+    toastMessage('¡Listo! Puedes hacer tu pedido. 🍕');
+    
+    btn.disabled = false;
+    btn.textContent = 'Continuar al menú';
+  });
+}
 
 if (editProfileBtn) {
   editProfileBtn.addEventListener('click', () => {

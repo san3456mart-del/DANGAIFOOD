@@ -73,6 +73,9 @@
           <button type="button" class="auth-toggle-btn" id="tabRegisterBtn">
             <span class="atb-icon">✨</span> Crear cuenta
           </button>
+          <button type="button" class="auth-toggle-btn" id="tabGuestBtn">
+            <span class="atb-icon">🚶</span> Invitado
+          </button>
         </div>
 
         <!-- ── LOGIN VIEW ──────────────────────────────────────── -->
@@ -189,6 +192,42 @@
             ¿Ya tienes cuenta?
             <button type="button" class="auth-link-btn" id="switchToLoginBtn">Inicia sesión →</button>
           </p>
+        </div>
+
+        <!-- ── GUEST VIEW ──────────────────────────────────────── -->
+        <div id="guestView" class="auth-form-card hidden">
+          <p class="auth-form-greeting">Pedir sin registrarme 🍕</p>
+          <form id="guestForm" class="auth-form" autocomplete="on">
+            <div class="auth-input-group">
+              <span class="aig-icon">😊</span>
+              <input type="text" id="guestName" autocomplete="given-name" required placeholder="Tu nombre completo" />
+            </div>
+            <div class="auth-input-group">
+              <span class="aig-icon">📱</span>
+              <input type="tel" id="guestPhone" autocomplete="tel" required placeholder="Número WhatsApp (ej. 3001234567)" />
+            </div>
+            
+            <p class="auth-field-hint" style="margin-top:10px;">📍 ¿Dónde te entregamos?</p>
+            <div class="auth-input-group">
+              <span class="aig-icon">🏘️</span>
+              <input type="text" id="guestComplex" required placeholder="Conjunto / Barrio" />
+            </div>
+            <div class="auth-addr-cols">
+              <div class="auth-input-group">
+                <span class="aig-icon">🏢</span>
+                <input type="text" id="guestTower" required placeholder="Torre / Bloque" />
+              </div>
+              <div class="auth-input-group">
+                <span class="aig-icon">🚪</span>
+                <input type="text" id="guestApartment" required placeholder="Apto / Casa" />
+              </div>
+            </div>
+            
+            <button type="submit" class="auth-submit-btn" style="margin-top:20px;">
+              <span>Continuar al menú</span>
+              <span class="asb-arrow">→</span>
+            </button>
+          </form>
         </div>
 
         <span class="pill hidden" id="profileStatus">Desconectado</span>
