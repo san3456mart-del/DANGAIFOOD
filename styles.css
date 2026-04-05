@@ -1229,3 +1229,23 @@ th { color: var(--muted); font-size: .85rem; text-transform: uppercase; letter-s
 @media (max-width: 680px) {
   .cr-pay-breakdown { grid-template-columns: 1fr; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   ADMIN — ORDER ITEM EXTRAS
+═══════════════════════════════════════════════════════════════ */
+.oc-item-extras {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  grid-column: 2 / 4;
+  margin-top: 4px;
+}
+.oc-item-extras span {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16,185,129,0.08);
+  padding: 2px 8px;
+  border-radius: 6px;
+  width: fit-content;
+}

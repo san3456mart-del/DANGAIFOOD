@@ -244,6 +244,7 @@ function renderOrders() {
         <span class="oc-item-name">${escapeHTML(item.name)}</span>
         <span class="oc-item-size">${escapeHTML(item.sizeLabel || '')}</span>
         ${item.removed?.length ? `<span class="oc-item-removed">sin ${escapeHTML(item.removed.join(', '))}</span>` : ''}
+        ${item.extras?.length ? `<div class="oc-item-extras">${item.extras.map(e => `<span>+ ${escapeHTML(e.name)}${e.qty > 1 ? ` (x${e.qty})` : ''}</span>`).join('')}</div>` : ''}
         <span class="oc-item-price">${money(item.price)}</span>
       </div>`
     ).join('');
