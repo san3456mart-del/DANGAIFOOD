@@ -764,8 +764,6 @@ if (skipToMenuBtn) {
 
 if (goToOrdersBtn) {
   goToOrdersBtn.addEventListener('click', () => {
-    const profile = getJson(storage.profile, null);
-    if (!profile || !profile.clientId) return toastMessage('Primero guarda tus datos para ver pedidos.');
     setStep(4);
   });
 }
@@ -895,10 +893,12 @@ setInterval(() => {
 function renderOrdersHistory() {
   if (!clientOrdersList) return;
   const profile = getJson(storage.profile, null);
-  if (!profile || !profile.clientId) return;
 
   const allOrders = getJson(storage.orders, []);
-  const myOrders = allOrders.filter(o => o.customer && o.customer.clientId === profile.clientId);
+  let myOrders = [];
+  if (profile && profile.clientId) {
+    myOrders = allOrders.filter(o => o.customer && o.customer.clientId === profile.clientId);
+  }
 
   if (!myOrders.length) {
     clientOrdersList.innerHTML = '<div class="empty-state">No tienes pedidos recientes.</div>';
