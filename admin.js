@@ -63,19 +63,6 @@ if (productCategorySelect) {
         card.style.display = cCat === sVal ? 'flex' : 'none';
       }
     });
-
-    document.querySelectorAll('details.category-accordion').forEach(details => {
-      if (sVal === 'all') {
-        details.style.display = 'block';
-      } else {
-        if (details.dataset.inventoryCategory === sVal) {
-          details.style.display = 'block';
-          details.setAttribute('open', 'true');
-        } else {
-          details.style.display = 'none';
-        }
-      }
-    });
   };
 }
 
@@ -419,13 +406,7 @@ function renderInventory() {
 
   let html = '';
   Object.keys(groupedProducts).forEach(catName => {
-    html += `
-    <details class="category-accordion" open data-inventory-category="${catName}" style="margin-bottom:16px;">
-      <summary style="cursor:pointer;font-size:1.15rem;color:var(--primary);border-bottom:2px solid var(--line);padding:12px 6px;text-transform:uppercase;display:flex;align-items:center;outline:none;font-weight:800;user-select:none;transition:background 0.2s;border-radius:6px;">
-        <span style="display:flex;align-items:center;width:100%;"><span style="margin-right:8px;font-size:1.3rem;">🍕</span> ${catName} <span class="badge ${catName}" style="background:rgba(255,107,53,0.1);color:var(--primary);font-size:0.85rem;margin-left:auto;padding:4px 10px;border-radius:20px;">${groupedProducts[catName].length} productos</span></span>
-      </summary>
-      <div class="accordion-content" style="padding-top:14px;padding-left:4px;">
-    `;
+    html += `<h3 style="margin:24px 0 12px;font-size:1.4rem;color:var(--primary);border-bottom:2px solid var(--line);padding-bottom:8px;text-transform:uppercase;display:flex;align-items:center;gap:8px;">🍕 ${catName} <span class="badge ${catName}" style="background:var(--bg);color:var(--muted);font-size:0.9rem;">${groupedProducts[catName].length}</span></h3>`;
     html += groupedProducts[catName].map((product) => `
       <div class="inventory-row inventory-row-stacked">
         <div class="inventory-main">
@@ -452,10 +433,6 @@ function renderInventory() {
         </div>
       </div>
     `).join('');
-    html += `
-      </div>
-    </details>
-    `;
   });
   inventoryList.innerHTML = html;
 
@@ -480,8 +457,6 @@ function renderInventory() {
       showToast('Producto eliminado.');
     });
   });
-
-  if(window.filterCategoryCards) window.filterCategoryCards();
 }
 
 function renderDashboard() {

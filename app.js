@@ -128,6 +128,20 @@ function loadProfile() {
     statusEl.textContent = profile.isGuest ? `Invitado: ${profile.name}` : profile.username;
   }
   if (editProfileBtn) editProfileBtn.classList.remove('hidden');
+
+  const nameInput = document.getElementById('guestName');
+  if (nameInput) {
+    nameInput.value = profile.name || '';
+    const phoneInput = document.getElementById('guestPhone');
+    if (phoneInput) phoneInput.value = profile.phone || '';
+    const complexInput = document.getElementById('guestComplex');
+    if (complexInput) complexInput.value = profile.complex || '';
+    const towerInput = document.getElementById('guestTower');
+    if (towerInput) towerInput.value = profile.tower || '';
+    const apartmentInput = document.getElementById('guestApartment');
+    if (apartmentInput) apartmentInput.value = profile.apartment || '';
+  }
+
   return true;
 }
 
@@ -602,8 +616,35 @@ function buildClientWhatsappMessage(order) {
 }
 
 async function submitOrder() {
-  const profile = getJson(storage.profile, null);
-  if (!profile) return toastMessage('Primero guarda tus datos.');
+  let profile = getJson(storage.profile, null);
+
+  const nameInput = document.getElementById('guestName');
+  if (nameInput) {
+    const name = nameInput.value.trim();
+    const phone = document.getElementById('guestPhone').value.trim();
+    const complex = document.getElementById('guestComplex').value.trim();
+    const tower = document.getElementById('guestTower').value.trim();
+    const apartment = document.getElementById('guestApartment').value.trim();
+
+    if (!name || !phone || !complex || !tower || !apartment) {
+      return toastMessage('Por favor completa todos tus datos de entrega en la parte de arriba 🛵.');
+    }
+
+    profile = {
+      clientId: profile ? profile.clientId : crypto.randomUUID(),
+      username: profile ? profile.username : 'invitado_' + Date.now(),
+      name,
+      phone,
+      complex,
+      tower,
+      apartment,
+      isGuest: true
+    };
+    localStorage.setItem(storage.profile, JSON.stringify(profile));
+    loadProfile();
+  }
+
+  if (!profile) return toastMessage('Primero guarda tus datos de entrega.');
   if (!cart.length) return toastMessage('Agrega por lo menos una pizza.');
   if (paymentMethod !== 'efectivo' && !paymentReceiptBase64) {
     return toastMessage('Debes subir el comprobante de pago para continuar.');
@@ -689,38 +730,6 @@ async function submitOrder() {
 if (guestForm) {
   guestForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const btn = guestForm.querySelector('button[type="submit"]');
-    const name = document.getElementById('guestName').value.trim();
-    const phone = document.getElementById('guestPhone').value.trim();
-    const complex = document.getElementById('guestComplex').value.trim();
-    const tower = document.getElementById('guestTower').value.trim();
-    const apartment = document.getElementById('guestApartment').value.trim();
-
-    if (!name || !phone || !complex || !tower || !apartment) {
-      return toastMessage('Por favor completa todos los campos.');
-    }
-
-    btn.disabled = true;
-    btn.textContent = 'Guardando...';
-
-    const guestProfile = {
-      clientId: crypto.randomUUID(),
-      username: 'invitado_' + Date.now(),
-      name,
-      phone,
-      complex,
-      tower,
-      apartment,
-      isGuest: true
-    };
-    
-    localStorage.setItem(storage.profile, JSON.stringify(guestProfile));
-    loadProfile();
-    setStep(2);
-    toastMessage('¡Listo! Puedes hacer tu pedido. 🍕');
-    
-    btn.disabled = false;
-    btn.textContent = 'Continuar al menú';
   });
 }
 
@@ -736,22 +745,12 @@ if (editProfileBtn) {
 }
 
 goToConfirmBtn.addEventListener('click', () => {
-  if (!getJson(storage.profile, null)) {
-    toastMessage('¡Para ordenar, primero dinos a dónde enviamos!');
-    setStep(1);
-    return;
-  }
   if (!cart.length) return toastMessage('Agrega por lo menos una pizza antes de continuar.');
   setStep(3);
 });
 
 if (floatingCartGoBtn) {
   floatingCartGoBtn.addEventListener('click', () => {
-    if (!getJson(storage.profile, null)) {
-      toastMessage('¡Para ordenar, primero dinos a dónde enviamos!');
-      setStep(1);
-      return;
-    }
     if (!cart.length) return toastMessage('Agrega por lo menos una pizza antes de continuar.');
     setStep(3);
   });
@@ -1045,7 +1044,7 @@ function renderOrdersHistory() {
 renderSizeTabs();
 renderMenu();
 renderCart();
-setStep(hasProfile ? 2 : 1);
+setStep(1);
 
 // Auto-refresh client order tracking when Firebase pushes status updates
 window.addEventListener('storage', () => {

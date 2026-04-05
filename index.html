@@ -67,41 +67,12 @@
 
         <!-- ── GUEST VIEW ──────────────────────────────────────── -->
         <div id="guestView" class="auth-form-card">
-          <p class="auth-form-greeting" style="font-size: 1.15rem;">¿A dónde llevamos tu pedido? 🛵</p>
-          <form id="guestForm" class="auth-form" autocomplete="on">
-            <div class="auth-input-group">
-              <span class="aig-icon">😊</span>
-              <input type="text" id="guestName" autocomplete="given-name" required placeholder="Tu nombre completo" />
-            </div>
-            <div class="auth-input-group">
-              <span class="aig-icon">📱</span>
-              <input type="tel" id="guestPhone" autocomplete="tel" required placeholder="Número WhatsApp (ej. 3001234567)" />
-            </div>
-            
-            <p class="auth-field-hint" style="margin-top:10px;">📍 Dirección de entrega</p>
-            <div class="auth-input-group">
-              <span class="aig-icon">🏘️</span>
-              <input type="text" id="guestComplex" required placeholder="Conjunto / Barrio" />
-            </div>
-            <div class="auth-addr-cols">
-              <div class="auth-input-group">
-                <span class="aig-icon">🏢</span>
-                <input type="text" id="guestTower" required placeholder="Torre / Bloque" />
-              </div>
-              <div class="auth-input-group">
-                <span class="aig-icon">🚪</span>
-                <input type="text" id="guestApartment" required placeholder="Apto / Casa" />
-              </div>
-            </div>
-            
-            <button type="submit" class="auth-submit-btn" style="margin-top:20px;">
-              <span>Continuar con mi pedido</span>
-              <span class="asb-arrow">→</span>
+          <p class="auth-form-greeting" style="font-size: 1.15rem;">¿Qué vas a pedir hoy? 🍕</p>
+          <div style="text-align: center; margin-top: 20px;">
+            <button type="button" class="auth-submit-btn" id="skipToMenuBtn" style="font-size: 1.2rem; padding: 16px; width: 100%;">
+              Quiero ver el menú de Dangai Food
             </button>
-            <button type="button" class="ghost-btn" id="skipToMenuBtn" style="margin-top:12px; width:100%;">
-              Solo quiero ver el menú 👀
-            </button>
-          </form>
+          </div>
         </div>
 
         <span class="pill hidden" id="profileStatus">Desconectado</span>
@@ -157,6 +128,33 @@
           <h4>🎟️ Tus cupones disponibles</h4>
           <div id="couponCards" class="coupon-cards"></div>
         </div>
+
+        <form id="guestForm" class="auth-form" autocomplete="on" style="margin-bottom: 20px;">
+          <h3 style="margin: 0 0 12px 0; color: var(--text); font-size: 1.1rem; font-weight: 800;">¿A dónde llevamos tu pedido? 🛵</h3>
+          <div class="auth-input-group">
+            <span class="aig-icon">😊</span>
+            <input type="text" id="guestName" autocomplete="given-name" required placeholder="Tu nombre completo" />
+          </div>
+          <div class="auth-input-group">
+            <span class="aig-icon">📱</span>
+            <input type="tel" id="guestPhone" autocomplete="tel" required placeholder="Número WhatsApp (ej. 3001234567)" />
+          </div>
+          <p class="auth-field-hint" style="margin-top:10px;">📍 Dirección de entrega</p>
+          <div class="auth-input-group">
+            <span class="aig-icon">🏘️</span>
+            <input type="text" id="guestComplex" required placeholder="Conjunto / Barrio" />
+          </div>
+          <div class="auth-addr-cols">
+            <div class="auth-input-group">
+              <span class="aig-icon">🏢</span>
+              <input type="text" id="guestTower" required placeholder="Torre / Bloque" />
+            </div>
+            <div class="auth-input-group">
+              <span class="aig-icon">🚪</span>
+              <input type="text" id="guestApartment" required placeholder="Apto / Casa" />
+            </div>
+          </div>
+        </form>
 
         <form id="paymentForm" style="margin-bottom: 20px; display: grid; gap: 12px;">
           <h3 style="margin: 0; color: var(--text); font-size: 1.1rem; font-weight: 800;">Método de Pago</h3>
