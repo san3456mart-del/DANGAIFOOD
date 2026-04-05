@@ -42,7 +42,7 @@ const indicators = Array.from(document.querySelectorAll('.wizard-step'));
 let cart = [];
 let currentStep = 1;
 let previousStep = 2;
-let activeSize = 'pizzas_personal';
+let activeSize = cfg.categories.pizzas ? 'pizzas' : Object.keys(cfg.categories)[0];
 let paymentMethod = 'efectivo';
 let paymentReceiptBase64 = null;
 let appliedCouponId = null;  // currently applied coupon ID
@@ -161,9 +161,9 @@ function loadProfile() {
 }
 
 function renderSizeTabs() {
-  sizeTabs.innerHTML = Object.entries(sizes).map(([key, value]) => `
+  sizeTabs.innerHTML = Object.entries(cfg.categories).map(([key, value]) => `
     <button type="button" class="size-tab ${activeSize === key ? 'active' : ''}" data-size-key="${key}">
-      <strong>${escapeHTML(value.label)}</strong>
+      <strong>${value.icon} ${escapeHTML(value.label)}</strong>
       <span>${escapeHTML(value.subtitle)}</span>
     </button>
   `).join('');
@@ -177,15 +177,15 @@ function renderSizeTabs() {
   });
 }
 
-function getProductsForSize(sizeKey) {
-  return getProducts().filter((product) => Number(product?.prices?.[sizeKey] || 0) > 0);
+function getProductsForCategory(catKey) {
+  return getProducts().filter((product) => product.category === catKey);
 }
 
 function renderMenu() {
-  const sizeInfo = sizes[activeSize];
-  const products = getProductsForSize(activeSize);
-  activeSizeTitle.textContent = sizeInfo.label;
-  activeSizeSubtitle.textContent = sizeInfo.subtitle;
+  const catInfo = cfg.categories[activeSize];
+  const products = getProductsForCategory(activeSize);
+  activeSizeTitle.textContent = catInfo.label;
+  activeSizeSubtitle.textContent = catInfo.subtitle;
   menuCountLabel.textContent = `${products.length} productos`;
   menuGrid.innerHTML = '';
 
@@ -199,26 +199,28 @@ function renderMenu() {
 
     const card = document.createElement('article');
     card.className = 'menu-item';
+    const pricesArr = Object.values(product.prices || {}).filter(v => v > 0);
+    const minPrice = Math.min(...pricesArr);
+    const isMultiSize = pricesArr.length > 1;
+
     card.innerHTML = `
       <div class="rappi-menu-row">
-        <div class="menu-image-placeholder">🍕</div>
+        <div class="menu-image-placeholder">${catInfo.icon || '🍕'}</div>
         <div class="menu-details">
-          <div class="pizza-size-badge">${escapeHTML(sizeInfo.shortLabel)} · ${escapeHTML(sizeInfo.subtitle)}</div>
           <h3>${escapeHTML(product.name)}</h3>
-          <div class="menu-price">${money(product.prices[activeSize])}</div>
+          <div class="menu-price">${isMultiSize ? '<span style="font-size:0.75rem; color:var(--muted); font-weight:400; margin-right:4px;">Desde</span>' : ''}${money(minPrice)}</div>
           <div class="menu-meta">${escapeHTML(product.ingredients)}</div>
-          ${stock < 5 && stock > 0 ? `<div class="menu-stock-warning">Solo quedan ${stock} disponibles</div>` : ''}
         </div>
       </div>
-      <button class="primary-btn add-btn" data-id="${product.id}" data-size-key="${activeSize}" ${stock < 1 ? 'disabled' : ''}>
-        ${stock < 1 ? '🚫 Agotado' : '➕ Personalizar y añadir'}
+      <button class="primary-btn add-btn" data-id="${product.id}">
+         ➕ Personalizar y añadir
       </button>
     `;
     menuGrid.appendChild(card);
   });
 
   menuGrid.querySelectorAll('.add-btn').forEach((btn) => {
-    btn.addEventListener('click', () => openPizzaModal(btn.dataset.id, btn.dataset.sizeKey));
+    btn.addEventListener('click', () => openPizzaModal(btn.dataset.id));
   });
 }
 
@@ -233,6 +235,8 @@ const pizzaModalOverlay  = document.getElementById('pizzaModalOverlay');
 const pmProductName      = document.getElementById('pmProductName');
 const pmProductIngredients = document.getElementById('pmProductIngredients');
 const pmRemovables       = document.getElementById('pmRemovables');
+const pmSizeSelector     = document.getElementById('pmSizeSelector');
+const pmSizeOptions      = document.getElementById('pmSizeOptions');
 const pmHalfGrid         = document.getElementById('pmHalfGrid');
 const pmHalf1Name        = document.getElementById('pmHalf1Name');
 const pmHalf2Name        = document.getElementById('pmHalf2Name');
@@ -243,15 +247,15 @@ const pmPanels           = document.querySelectorAll('.pm-panel');
 const pizzaModalAddBtn   = document.getElementById('pizzaModalAddBtn');
 const pizzaModalCancelBtn = document.getElementById('pizzaModalCancelBtn');
 
-function openPizzaModal(productId, sizeKey) {
+function openPizzaModal(productId) {
   const product = getProducts().find(p => p.id === productId);
-  const sizeInfo = sizes[sizeKey];
-  if (!product || !sizeInfo) return toastMessage('Producto no encontrado.');
-  const stock = Number(product?.stock?.[sizeKey] || 0);
-  if (stock < 1) return toastMessage('Ese sabor está agotado en ese tamaño.');
+  if (!product) return toastMessage('Producto no encontrado.');
+
+  const productSizes = Object.entries(product.prices || {}).filter(([key, val]) => val > 0);
+  if (!productSizes.length) return toastMessage('Este producto no tiene precio configurado.');
 
   _modalProduct = product;
-  _modalSizeKey = sizeKey;
+  _modalSizeKey = productSizes.length === 1 ? productSizes[0][0] : null;
   _modalHalf2   = null;
   _modalExtras  = {};
   _modalRemoved = [];
@@ -259,6 +263,33 @@ function openPizzaModal(productId, sizeKey) {
   // --- Normal tab ---
   pmProductName.textContent = product.name;
   pmProductIngredients.textContent = product.ingredients;
+
+  // Render Size Selection if applicable
+  pmSizeOptions.innerHTML = '';
+  if (productSizes.length > 1) {
+    pmSizeSelector.classList.remove('hidden');
+    productSizes.forEach(([key, price]) => {
+      const info = cfg.pizzaSizes[key] || cfg.categories[key] || { label: key, subtitle: '' };
+      const opt = document.createElement('button');
+      opt.type = 'button';
+      opt.className = `pm-size-option ${_modalSizeKey === key ? 'selected' : ''}`;
+      opt.innerHTML = `
+        <strong>${escapeHTML(info.shortLabel || info.label)}</strong>
+        <span>${escapeHTML(info.subtitle)}</span>
+        <em>${money(price)}</em>
+      `;
+      opt.addEventListener('click', () => {
+        _modalSizeKey = key;
+        pmSizeOptions.querySelectorAll('.pm-size-option').forEach(b => b.classList.toggle('selected', b === opt));
+        _updateModalPrice();
+        _renderHalfGrid(key, productId); // refresh half grid for this size
+      });
+      pmSizeOptions.appendChild(opt);
+    });
+  } else {
+    pmSizeSelector.classList.add('hidden');
+  }
+
   pmRemovables.innerHTML = '';
   if (product.removableOptions && product.removableOptions.length) {
     product.removableOptions.forEach(opt => {
@@ -275,10 +306,17 @@ function openPizzaModal(productId, sizeKey) {
     pmRemovables.innerHTML = '<div class="pm-no-opts">Este sabor no tiene ingredientes removibles.</div>';
   }
 
-  // --- Half & Half tab ---
-  pmHalf1Name.textContent = product.name;
-  pmHalf2Name.textContent = 'Elige abajo';
-  _renderHalfGrid(sizeKey, productId);
+  // --- Half & Half tab visibility ---
+  const halfTabBtn = document.querySelector('[data-pm-tab="half"]');
+  if (product.category === 'pizzas') {
+    halfTabBtn.classList.remove('hidden');
+    pmHalf1Name.textContent = product.name;
+    pmHalf2Name.textContent = 'Elige abajo';
+    if (_modalSizeKey) _renderHalfGrid(_modalSizeKey, productId);
+    else pmHalfGrid.innerHTML = '<div class="pm-no-opts">Selecciona un tamaño primero.</div>';
+  } else {
+    halfTabBtn.classList.add('hidden');
+  }
 
   // --- Extras tab ---
   _renderExtrasTab();
@@ -412,13 +450,15 @@ pizzaModalOverlay.addEventListener('click', e => { if (e.target === pizzaModalOv
 pizzaModalAddBtn.addEventListener('click', addToCartFromModal);
 
 function addToCartFromModal() {
-  if (!_modalProduct || !_modalSizeKey) return;
+  if (!_modalProduct) return;
+  if (!_modalSizeKey) return toastMessage('Por favor selecciona el tamaño antes de añadir.');
+  
   const product  = _modalProduct;
   const sizeKey  = _modalSizeKey;
-  const sizeInfo = sizes[sizeKey];
+  const info     = cfg.sizes[sizeKey] || { label: '', shortLabel: '', subtitle: '' };
   const products = getProducts();
   const stock    = Number(products.find(p => p.id === product.id)?.stock?.[sizeKey] || 0);
-  if (stock < 1) return toastMessage('Ese sabor está agotado.');
+  if (stock < 1) return toastMessage('Ese tamaño está agotado.');
 
   const extras    = getExtras();
   const extrasArr = Object.entries(_modalExtras)
@@ -446,7 +486,7 @@ function addToCartFromModal() {
     productId: product.id,
     name:      displayName,
     sizeKey,
-    sizeLabel: `${sizeInfo.shortLabel} (${sizeInfo.subtitle})`,
+    sizeLabel: `${info.shortLabel || info.label} ${info.subtitle ? `(${info.subtitle})` : ''}`,
     price:     totalPrice,
     cost:      baseCost,
     removed:   [..._modalRemoved],

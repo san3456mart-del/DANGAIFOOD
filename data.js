@@ -1,17 +1,21 @@
 (function () {
-  const sizes = {
+  const categories = {
+    pizzas: { label: 'Pizzas', icon: '🍕', subtitle: 'Personal, Small o Medium' },
+    perros: { label: 'Perros', icon: '🌭', subtitle: 'Calientes' },
+    hamburguesas: { label: 'Hamburguesas', icon: '🍔', subtitle: 'Con papas' },
+    desgranados: { label: 'Desgranados', icon: '🌽', subtitle: '' },
+    sandwich: { label: 'Sandwich', icon: '🥪', subtitle: 'Con papas' },
+    salchipapas: { label: 'Salchipapas', icon: '🍟', subtitle: '' },
+    salvajadas: { label: 'Salvajadas', icon: '🌋', subtitle: 'Para compartir' },
+    asado: { label: 'Asado', icon: '🍖', subtitle: 'Carnes Asadas' },
+    infantil: { label: 'Menú Infantil', icon: '🎁', subtitle: '' },
+    bebidas: { label: 'Bebidas', icon: '🥤', subtitle: 'Refrescos' }
+  };
+
+  const pizzaSizes = {
     pizzas_personal: { label: 'Pizzas Personales', shortLabel: 'Personal', subtitle: 'Pizzas 27 cm' },
     pizzas_small: { label: 'Pizzas Small', shortLabel: 'Small', subtitle: 'Pizzas 35 cm' },
-    pizzas_medium: { label: 'Pizzas Medium', shortLabel: 'Medium', subtitle: 'Pizzas 40 cm' },
-    perros: { label: 'Perros', shortLabel: 'Perros', subtitle: 'Calientes' },
-    hamburguesas: { label: 'Hamburguesas', shortLabel: 'Hamburguesas', subtitle: 'Con papas' },
-    desgranados: { label: 'Desgranados', shortLabel: 'Desgranados', subtitle: '' },
-    sandwich: { label: 'Sandwich', shortLabel: 'Sandwich', subtitle: 'Con papas' },
-    salchipapas: { label: 'Salchipapas', shortLabel: 'Salchipapas', subtitle: '' },
-    salvajadas: { label: 'Salvajadas', shortLabel: 'Salvajadas', subtitle: 'Para compartir' },
-    asado: { label: 'Asado', shortLabel: 'Asado', subtitle: 'Carnes Asadas' },
-    infantil: { label: 'Menú Infantil', shortLabel: 'Infantil', subtitle: '' },
-    bebidas: { label: 'Bebidas', shortLabel: 'Bebidas', subtitle: 'Refrescos' }
+    pizzas_medium: { label: 'Pizzas Medium', shortLabel: 'Medium', subtitle: 'Pizzas 40 cm' }
   };
 
   const additionalIngredients = [
@@ -273,22 +277,30 @@
     );
   }
 
-  const defaultProducts = menuBase.map((item) => ({
-    id: crypto.randomUUID(),
-    category: 'pizza',
-    name: item.name,
-    ingredients: item.ingredients,
-    removableOptions: item.removableOptions,
-    prices: item.prices,
-    costs: deriveCosts(item.prices),
-    stock: { pizzas_personal: 12, pizzas_small: 12, pizzas_medium: 12 }
-  }));
+  const defaultProducts = menuBase.map((item) => {
+    const priceKeys = Object.keys(item.prices);
+    let category = priceKeys[0];
+    if (category.startsWith('pizzas_')) category = 'pizzas';
+
+    return {
+      id: crypto.randomUUID(),
+      category: category,
+      name: item.name,
+      ingredients: item.ingredients,
+      removableOptions: item.removableOptions,
+      prices: item.prices,
+      costs: deriveCosts(item.prices),
+      stock: Object.keys(item.prices).reduce((acc, k) => { acc[k] = 12; return acc; }, {})
+    };
+  });
 
   window.RestaurantAppConfig = {
     restaurantName: 'Dangai Food',
     whatsappNumber: '573506876430',
     deliveryFee: 0,
-    sizes,
+    categories,
+    pizzaSizes,
+    sizes: { ...categories, ...pizzaSizes },
     additionalIngredients,
     defaultExtras,
     profitRate: 0.30,   // 30 % de la venta total

@@ -83,11 +83,11 @@
         <div class="section-title-row">
           <div>
             <p class="section-kicker">Paso 2</p>
-            <h2>Menú de pizzas por tamaño</h2>
+            <h2>Explora nuestro menú</h2>
           </div>
-          <span class="pill accent">Marca ingredientes que no quieras</span>
+          <span class="pill accent">Personaliza tus productos</span>
         </div>
-        <p class="helper-text">El menú quedó separado en tres secciones: <strong>personales</strong>, <strong>small</strong> y <strong>medium</strong>.</p>
+        <p class="helper-text">Selecciona una categoría y añade tus productos favoritos al carrito.</p>
 
         <div id="sizeTabs" class="size-tabs"></div>
         <div class="menu-section-head">
@@ -223,7 +223,13 @@
       <div class="pm-panel active" id="pmTabNormal">
         <h3 class="pm-title" id="pmProductName">—</h3>
         <p class="pm-sub" id="pmProductIngredients"></p>
-        <p class="pm-sub" style="font-weight:700;color:var(--secondary);margin-bottom:4px;">¿Quieres quitar algún ingrediente?</p>
+
+        <div id="pmSizeSelector" class="pm-size-selector hidden">
+          <p class="pm-sub" style="font-weight:700;color:var(--secondary);margin-bottom:8px;">Selecciona el tamaño:</p>
+          <div id="pmSizeOptions" class="pm-size-options"></div>
+        </div>
+
+        <p class="pm-sub" style="font-weight:700;color:var(--secondary);margin-bottom:4px;margin-top:12px;">¿Quieres quitar algún ingrediente?</p>
         <div id="pmRemovables" class="pm-removables"></div>
       </div>
 
