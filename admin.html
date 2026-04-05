@@ -144,6 +144,12 @@
                 <input id="productOptions" placeholder="jamón, piña, maíz" />
               </label>
 
+              <label class="full-width">Seleccione la categoría que desea administrar para este producto:
+                <select id="productCategorySelect" onchange="filterCategoryCards()" style="border: 2px solid var(--primary); padding: 10px; border-radius: 8px; font-weight: bold;">
+                  <!-- Dynamically populated in admin.js -->
+                </select>
+              </label>
+
               <div class="size-edit-grid full-width" id="dynamicSizeCards">
                 <!-- Dynamically populated from sizes in admin.js -->
               </div>

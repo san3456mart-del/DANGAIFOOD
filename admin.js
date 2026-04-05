@@ -43,16 +43,39 @@ const customersTableBody = document.getElementById('customersTableBody');
 const customersCount = document.getElementById('customersCount');
 const ordersSearchInput = document.getElementById('ordersSearchInput');
 const dynamicSizeCards = document.getElementById('dynamicSizeCards');
+const productCategorySelect = document.getElementById('productCategorySelect');
+
+if (productCategorySelect) {
+  const catSet = new Set();
+  Object.keys(sizes).forEach(k => {
+    catSet.add(k.split('_')[0]);
+  });
+  productCategorySelect.innerHTML = '<option value="all">Todas las categorías</option>' + 
+    Array.from(catSet).map(c => `<option value="${c}">${c.toUpperCase()}</option>`).join('');
+
+  window.filterCategoryCards = () => {
+    const sVal = productCategorySelect.value;
+    document.querySelectorAll('.size-edit-card').forEach(card => {
+      if (sVal === 'all') {
+        card.style.display = 'flex';
+      } else {
+        const cCat = card.dataset.cardCat.split('_')[0];
+        card.style.display = cCat === sVal ? 'flex' : 'none';
+      }
+    });
+  };
+}
 
 if (dynamicSizeCards) {
   dynamicSizeCards.innerHTML = Object.entries(sizes).map(([key, info]) => `
-    <div class="size-edit-card">
-      <h3>${info.shortLabel}</h3>
-      <label>Precio<input id="price_${key}" type="number" min="0" step="100" value="0" required /></label>
-      <label>Costo<input id="cost_${key}" type="number" min="0" step="100" value="0" required /></label>
-      <label>Stock<input id="stock_${key}" type="number" min="0" step="1" value="0" required /></label>
+    <div class="size-edit-card" data-card-cat="${key}">
+      <h3 style="color:var(--primary);">${info.shortLabel}</h3>
+      <label>Precio<input id="price_${key}" type="number" min="0" step="100" value="0" /></label>
+      <label>Costo<input id="cost_${key}" type="number" min="0" step="100" value="0" /></label>
+      <label>Stock<input id="stock_${key}" type="number" min="0" step="1" value="0" /></label>
     </div>
   `).join('');
+  if(window.filterCategoryCards) window.filterCategoryCards();
 }
 
 let lastKnownOrderId = localStorage.getItem(storage.lastOrderSound) || null;
@@ -324,14 +347,24 @@ function fillProductForm(product) {
   document.getElementById('productName').value = product?.name || '';
   document.getElementById('productIngredients').value = product?.ingredients || '';
   document.getElementById('productOptions').value = (product?.removableOptions || []).join(', ');
+  
+  let activeCat = 'all';
   Object.keys(sizes).forEach(key => {
+    const pVal = product?.prices?.[key] || 0;
+    if (pVal > 0) activeCat = key.split('_')[0];
+    
     const pEl = document.getElementById(`price_${key}`);
     const cEl = document.getElementById(`cost_${key}`);
     const sEl = document.getElementById(`stock_${key}`);
-    if (pEl) pEl.value = product?.prices?.[key] || 0;
+    if (pEl) pEl.value = pVal;
     if (cEl) cEl.value = product?.costs?.[key] || 0;
     if (sEl) sEl.value = product?.stock?.[key] || 0;
   });
+
+  if (document.getElementById('productCategorySelect')) {
+    document.getElementById('productCategorySelect').value = product ? activeCat : 'all';
+    if(window.filterCategoryCards) window.filterCategoryCards();
+  }
 }
 
 function resetProductForm() {
@@ -358,32 +391,50 @@ function renderInventory() {
   const products = getProducts();
   inventoryCount.textContent = `${products.length} sabores`;
 
-  inventoryList.innerHTML = products.length ? products.map((product) => `
-    <div class="inventory-row inventory-row-stacked">
-      <div class="inventory-main">
-        <strong>${escapeHTML(product.name)}</strong>
-        <div class="menu-meta">${escapeHTML(product.ingredients)}</div>
-        <div class="inventory-sizes">
-          ${Object.entries(sizes).map(([key, info]) => `
-            <div class="inventory-size-pill">
-              <span>${escapeHTML(info.shortLabel)}</span>
-              <strong>${money(product?.prices?.[key] || 0)}</strong>
-              <small>costo ${money(product?.costs?.[key] || 0)} · stock ${Number(product?.stock?.[key] || 0)}</small>
-              <div class="inventory-actions compact">
-                <button class="mini-btn" data-stock-change="1" data-size-key="${key}" data-product-id="${product.id}">+1</button>
-                <button class="mini-btn" data-stock-change="-1" data-size-key="${key}" data-product-id="${product.id}">-1</button>
+  if (!products.length) {
+    inventoryList.innerHTML = '<div class="empty-state">No hay productos creados.</div>';
+    return;
+  }
+
+  const groupedProducts = {};
+  products.forEach(p => {
+    const activeKey = Object.keys(sizes).find(k => Number(p.prices?.[k]) > 0) || 'varios';
+    const mainCat = activeKey.split('_')[0];
+    if (!groupedProducts[mainCat]) groupedProducts[mainCat] = [];
+    groupedProducts[mainCat].push(p);
+  });
+
+  let html = '';
+  Object.keys(groupedProducts).forEach(catName => {
+    html += `<h3 style="margin:24px 0 12px;font-size:1.4rem;color:var(--primary);border-bottom:2px solid var(--line);padding-bottom:8px;text-transform:uppercase;display:flex;align-items:center;gap:8px;">🍕 ${catName} <span class="badge ${catName}" style="background:var(--bg);color:var(--muted);font-size:0.9rem;">${groupedProducts[catName].length}</span></h3>`;
+    html += groupedProducts[catName].map((product) => `
+      <div class="inventory-row inventory-row-stacked">
+        <div class="inventory-main">
+          <strong>${escapeHTML(product.name)}</strong>
+          <div class="menu-meta">${escapeHTML(product.ingredients)}</div>
+          <div class="inventory-sizes">
+            ${Object.entries(sizes).filter(([key, info]) => Number(product?.prices?.[key] || 0) > 0).map(([key, info]) => `
+              <div class="inventory-size-pill">
+                <span>${escapeHTML(info.shortLabel)}</span>
+                <strong>${money(product?.prices?.[key] || 0)}</strong>
+                <small>costo ${money(product?.costs?.[key] || 0)} · stock ${Number(product?.stock?.[key] || 0)}</small>
+                <div class="inventory-actions compact">
+                  <button class="mini-btn" data-stock-change="1" data-size-key="${key}" data-product-id="${product.id}">+1</button>
+                  <button class="mini-btn" data-stock-change="-1" data-size-key="${key}" data-product-id="${product.id}">-1</button>
+                </div>
               </div>
-            </div>
-          `).join('')}
+            `).join('')}
+          </div>
+          <div class="menu-meta">Ingredientes removibles: ${(product.removableOptions || []).length ? escapeHTML(product.removableOptions.join(', ')) : 'No configurados'}</div>
         </div>
-        <div class="menu-meta">Ingredientes removibles: ${(product.removableOptions || []).length ? escapeHTML(product.removableOptions.join(', ')) : 'No configurados'}</div>
+        <div class="inventory-actions">
+          <button class="mini-btn" data-edit-product-id="${product.id}">Editar</button>
+          <button class="mini-btn danger" data-remove-product-id="${product.id}">Borrar</button>
+        </div>
       </div>
-      <div class="inventory-actions">
-        <button class="mini-btn" data-edit-product-id="${product.id}">Editar</button>
-        <button class="mini-btn danger" data-remove-product-id="${product.id}">Borrar</button>
-      </div>
-    </div>
-  `).join('') : '<div class="empty-state">No hay productos creados.</div>';
+    `).join('');
+  });
+  inventoryList.innerHTML = html;
 
   inventoryList.querySelectorAll('[data-stock-change]').forEach((btn) => {
     btn.addEventListener('click', () => adjustStock(btn.dataset.productId, btn.dataset.sizeKey, Number(btn.dataset.stockChange)));
