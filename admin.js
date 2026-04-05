@@ -142,6 +142,27 @@ function badge(status) {
   return `<span class="badge ${status}">${label}</span>`;
 }
 
+const ORDER_LIMIT_MS = 45 * 60 * 1000; // 45 minutes
+
+function getCountdownData(createdAt) {
+  const elapsed = Date.now() - new Date(createdAt).getTime();
+  const remaining = ORDER_LIMIT_MS - elapsed;
+  if (remaining <= 0) return { text: '¡Tiempo superado!', urgent: true, exceeded: true };
+  const mins = Math.floor(remaining / 60000);
+  const secs = Math.floor((remaining % 60000) / 1000);
+  const pad = n => String(n).padStart(2, '0');
+  return { text: `${pad(mins)}:${pad(secs)}`, urgent: mins < 5, exceeded: false };
+}
+
+// Tick all countdown spans every second without re-rendering everything
+setInterval(() => {
+  document.querySelectorAll('.order-countdown[data-created]').forEach(el => {
+    const data = getCountdownData(el.dataset.created);
+    el.textContent = data.text;
+    el.style.color = data.exceeded ? '#dc2626' : data.urgent ? '#f59e0b' : '#16a34a';
+  });
+}, 1000);
+
 function setStatus(orderId, status) {
   const orders = getOrders().map((order) => order.id === orderId ? { ...order, status } : order);
   saveOrders(orders);
@@ -277,6 +298,12 @@ function renderOrders() {
           <div>
             <div class="oc-id">${escapeHTML(order.id)}</div>
             <div class="oc-meta">${formatDate(order.createdAt)}</div>
+            ${isActive ? `
+              <div style="margin-top:8px; display:flex; align-items:center; gap:6px; background:#fff; border:1px solid var(--line); padding:4px 10px; border-radius:10px; font-weight:700; width:fit-content;">
+                <span style="font-size:0.9rem;">⏱️</span>
+                <span class="order-countdown" data-created="${order.createdAt}" style="font-size:1.1rem;font-variant-numeric:tabular-nums;line-height:1.1;">--:--</span>
+              </div>
+            ` : ''}
           </div>
         </div>
         <div class="oc-header-right">
