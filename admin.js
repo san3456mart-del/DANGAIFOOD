@@ -42,6 +42,18 @@ const deliveryFeeInput = document.getElementById('deliveryFeeInput');
 const customersTableBody = document.getElementById('customersTableBody');
 const customersCount = document.getElementById('customersCount');
 const ordersSearchInput = document.getElementById('ordersSearchInput');
+const dynamicSizeCards = document.getElementById('dynamicSizeCards');
+
+if (dynamicSizeCards) {
+  dynamicSizeCards.innerHTML = Object.entries(sizes).map(([key, info]) => `
+    <div class="size-edit-card">
+      <h3>${info.shortLabel}</h3>
+      <label>Precio<input id="price_${key}" type="number" min="0" step="100" value="0" required /></label>
+      <label>Costo<input id="cost_${key}" type="number" min="0" step="100" value="0" required /></label>
+      <label>Stock<input id="stock_${key}" type="number" min="0" step="1" value="0" required /></label>
+    </div>
+  `).join('');
+}
 
 let lastKnownOrderId = localStorage.getItem(storage.lastOrderSound) || null;
 let soundArmed = false;
@@ -312,15 +324,14 @@ function fillProductForm(product) {
   document.getElementById('productName').value = product?.name || '';
   document.getElementById('productIngredients').value = product?.ingredients || '';
   document.getElementById('productOptions').value = (product?.removableOptions || []).join(', ');
-  document.getElementById('pricePersonal').value = product?.prices?.personal || 0;
-  document.getElementById('costPersonal').value = product?.costs?.personal || 0;
-  document.getElementById('stockPersonal').value = product?.stock?.personal || 0;
-  document.getElementById('priceSmall').value = product?.prices?.small || 0;
-  document.getElementById('costSmall').value = product?.costs?.small || 0;
-  document.getElementById('stockSmall').value = product?.stock?.small || 0;
-  document.getElementById('priceMedium').value = product?.prices?.medium || 0;
-  document.getElementById('costMedium').value = product?.costs?.medium || 0;
-  document.getElementById('stockMedium').value = product?.stock?.medium || 0;
+  Object.keys(sizes).forEach(key => {
+    const pEl = document.getElementById(`price_${key}`);
+    const cEl = document.getElementById(`cost_${key}`);
+    const sEl = document.getElementById(`stock_${key}`);
+    if (pEl) pEl.value = product?.prices?.[key] || 0;
+    if (cEl) cEl.value = product?.costs?.[key] || 0;
+    if (sEl) sEl.value = product?.stock?.[key] || 0;
+  });
 }
 
 function resetProductForm() {
@@ -622,21 +633,9 @@ productForm.addEventListener('submit', (e) => {
     name: document.getElementById('productName').value.trim(),
     ingredients: document.getElementById('productIngredients').value.trim(),
     removableOptions: document.getElementById('productOptions').value.split(',').map((item) => item.trim()).filter(Boolean),
-    prices: {
-      personal: Number(document.getElementById('pricePersonal').value || 0),
-      small: Number(document.getElementById('priceSmall').value || 0),
-      medium: Number(document.getElementById('priceMedium').value || 0)
-    },
-    costs: {
-      personal: Number(document.getElementById('costPersonal').value || 0),
-      small: Number(document.getElementById('costSmall').value || 0),
-      medium: Number(document.getElementById('costMedium').value || 0)
-    },
-    stock: {
-      personal: Number(document.getElementById('stockPersonal').value || 0),
-      small: Number(document.getElementById('stockSmall').value || 0),
-      medium: Number(document.getElementById('stockMedium').value || 0)
-    }
+    prices: Object.keys(sizes).reduce((acc, key) => { acc[key] = Number(document.getElementById(`price_${key}`)?.value || 0); return acc; }, {}),
+    costs: Object.keys(sizes).reduce((acc, key) => { acc[key] = Number(document.getElementById(`cost_${key}`)?.value || 0); return acc; }, {}),
+    stock: Object.keys(sizes).reduce((acc, key) => { acc[key] = Number(document.getElementById(`stock_${key}`)?.value || 0); return acc; }, {})
   };
 
   const products = getProducts();

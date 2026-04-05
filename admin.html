@@ -144,25 +144,8 @@
                 <input id="productOptions" placeholder="jamón, piña, maíz" />
               </label>
 
-              <div class="size-edit-grid full-width">
-                <div class="size-edit-card">
-                  <h3>Personal (27 cm)</h3>
-                  <label>Precio<input id="pricePersonal" type="number" min="0" step="100" required /></label>
-                  <label>Costo<input id="costPersonal" type="number" min="0" step="100" required /></label>
-                  <label>Stock<input id="stockPersonal" type="number" min="0" step="1" required /></label>
-                </div>
-                <div class="size-edit-card">
-                  <h3>Small (35 cm)</h3>
-                  <label>Precio<input id="priceSmall" type="number" min="0" step="100" required /></label>
-                  <label>Costo<input id="costSmall" type="number" min="0" step="100" required /></label>
-                  <label>Stock<input id="stockSmall" type="number" min="0" step="1" required /></label>
-                </div>
-                <div class="size-edit-card">
-                  <h3>Medium (40 cm)</h3>
-                  <label>Precio<input id="priceMedium" type="number" min="0" step="100" required /></label>
-                  <label>Costo<input id="costMedium" type="number" min="0" step="100" required /></label>
-                  <label>Stock<input id="stockMedium" type="number" min="0" step="1" required /></label>
-                </div>
+              <div class="size-edit-grid full-width" id="dynamicSizeCards">
+                <!-- Dynamically populated from sizes in admin.js -->
               </div>
 
               <div class="wizard-actions-row full-width">
