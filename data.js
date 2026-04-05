@@ -294,6 +294,7 @@
     profitRate: 0.30,   // 30 % de la venta total
     storageKeys: {
       profile: 'restaurant_profile_v2',
+      deviceId: 'restaurant_device_id_v2',
       products: 'restaurant_products_v3',
       orders: 'restaurant_orders_v2',
       users: 'restaurant_users_v2',

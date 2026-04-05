@@ -63,6 +63,21 @@ const escapeHTML = (value) => String(value || '')
   .replace(/"/g, '&quot;')
   .replace(/'/g, '&#39;');
 
+function getDeviceId() {
+  let id = localStorage.getItem(storage.deviceId);
+  if (!id) {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      id = 'dev_' + crypto.randomUUID();
+    } else {
+      id = 'dev_' + Date.now().toString(36) + Math.random().toString(36).slice(2);
+    }
+    localStorage.setItem(storage.deviceId, id);
+  }
+  return id;
+}
+
+const deviceId = getDeviceId();
+
 function getDeliveryFee() {
   const settings = getJson(storage.settings, {});
   return settings.deliveryFee !== undefined ? Number(settings.deliveryFee) : Number(cfg.deliveryFee || 0);
@@ -631,7 +646,7 @@ async function submitOrder() {
     }
 
     profile = {
-      clientId: profile ? profile.clientId : crypto.randomUUID(),
+      clientId: profile ? profile.clientId : deviceId,
       username: profile ? profile.username : 'invitado_' + Date.now(),
       name,
       phone,
@@ -644,7 +659,7 @@ async function submitOrder() {
     loadProfile();
   }
 
-  if (!profile) return toastMessage('Primero guarda tus datos de entrega.');
+  if (!profile) return toastMessage('Por favor completa todos tus datos de entrega 🛵.');
   if (!cart.length) return toastMessage('Agrega por lo menos una pizza.');
   if (paymentMethod !== 'efectivo' && !paymentReceiptBase64) {
     return toastMessage('Debes subir el comprobante de pago para continuar.');
@@ -676,7 +691,8 @@ async function submitOrder() {
       cost: totalCost,
       estimatedProfit: Math.round((subtotal + getDeliveryFee() - discount) * (cfg.profitRate || 0.30)),
       paymentMethod,
-      receiptBase64: paymentReceiptBase64
+      receiptBase64: paymentReceiptBase64,
+      deviceId: deviceId
     };
 
     const orders = getJson(storage.orders, []);
@@ -896,9 +912,13 @@ function renderOrdersHistory() {
 
   const allOrders = getJson(storage.orders, []);
   let myOrders = [];
-  if (profile && profile.clientId) {
-    myOrders = allOrders.filter(o => o.customer && o.customer.clientId === profile.clientId);
-  }
+  
+  // Filter by EXACT deviceId if available, OR by old clientId for backwards compatibility
+  myOrders = allOrders.filter(o => 
+    (o.deviceId && o.deviceId === deviceId) || 
+    (o.customer && o.customer.clientId === deviceId) ||
+    (profile && o.customer && o.customer.clientId === profile.clientId)
+  );
 
   if (!myOrders.length) {
     clientOrdersList.innerHTML = '<div class="empty-state">No tienes pedidos recientes.</div>';
