@@ -2,10 +2,38 @@ const cfg = window.RestaurantAppConfig;
 const storage = cfg.storageKeys;
 const sizes = cfg.sizes;
 const money = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(n || 0));
-const getJson = (key, fallback) => JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
+const getJson = (key, fallback) => {
+  let data;
+  try {
+    data = JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
+  } catch(e) {
+    return fallback;
+  }
+  // Convert object to array if it's the orders key (handles granular Firebase updates)
+  if (key === storage.orders && data && !Array.isArray(data)) {
+    return Object.values(data).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+  return data;
+};
+
 const setJson = (key, value) => {
-  localStorage.setItem(key, JSON.stringify(value));
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (err) {
+    if (err.name === 'QuotaExceededError' || err.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+      console.warn('¡Almacenamiento Local Lleno!');
+    }
+  }
+
   if (window.FirebaseDB) {
+    // PROTECCIÓN CRÍTICA: No sobrescribir masivamente el nodo de pedidos
+    // Si la clave es la de pedidos, usamos actualización granular si es posible, o evitamos el 'set' masivo
+    if (key === storage.orders) {
+      // En lugar de persistir TODA la lista (que borraría lo que el admin actual no ve),
+      // dejamos que las funciones como setStatus o submitOrder manejen su propia persistencia granular.
+      // Así los pedidos entrantes NUNCA se borrarán por un admin con datos viejos.
+      return; 
+    }
     window.FirebaseDB.save(key, value).catch(err => console.warn('Firebase sync error:', err));
   }
 };
@@ -165,7 +193,19 @@ setInterval(() => {
 
 function setStatus(orderId, status) {
   const orders = getOrders().map((order) => order.id === orderId ? { ...order, status } : order);
+  
+  // Guardar localmente y en la lista global (sobrescribe pero es necesario para la UI local inmediata)
   saveOrders(orders);
+  
+  // ACTUALIZACIÓN GRANULAR en Firebase: Sólo actualizamos este pedido por su ID
+  // Esto evita borrar otros pedidos nuevos que hayan llegado y que el admin actual aún no vea.
+  if (window.FirebaseDB) {
+    // Asegurarse de que el ID no tenga caracteres prohibidos por Firebase
+    const cleanId = String(orderId).replace(/[\.\$#\[\]\/]/g, '_');
+    window.FirebaseDB.update(storage.orders + '/' + cleanId, { status })
+      .catch(err => console.error('Error en actualización granular:', err));
+  }
+
   renderAll();
   showToast(`Pedido ${orderId} actualizado a ${status}.`);
 }
@@ -176,16 +216,68 @@ window.confirmPayment = (orderId) => {
   if (idx > -1) {
     orders[idx].paymentConfirmed = true;
     saveOrders(orders);
+
+    // Actualización granular para pago
+    if (window.FirebaseDB) {
+      const cleanId = String(orderId).replace(/[\.\$#\[\]\/]/g, '_');
+      window.FirebaseDB.update(storage.orders + '/' + cleanId, { paymentConfirmed: true })
+        .catch(err => console.error('Error en actualización granular pago:', err));
+    }
+
     renderAll();
     showToast('Pago de pedido confirmado.');
   }
 };
 
 function deleteOrder(orderId) {
-  saveOrders(getOrders().filter((order) => order.id !== orderId));
+  const orders = getOrders().filter((order) => order.id !== orderId);
+  // Guardamos localmente
+  localStorage.setItem(storage.orders, JSON.stringify(orders));
+  
+  // ELIMINACIÓN EXPLÍCITA en Firebase: Sólo borramos este ID
+  if (window.FirebaseDB) {
+    const cleanId = String(orderId).replace(/[\.\$#\[\]\/]/g, '_');
+    window.FirebaseDB.save(storage.orders + '/' + cleanId, null)
+      .catch(err => console.error('Error al borrar de Firebase:', err));
+  }
+  
   renderAll();
   showToast(`Pedido ${orderId} eliminado.`);
 }
+
+/**
+ * Libera espacio borrando los Base64 pesados de pedidos antiguos ya finalizados.
+ */
+window.cleanupOldReceipts = () => {
+  const orders = getOrders();
+  const now = Date.now();
+  const ONE_DAY = 24 * 60 * 60 * 1000;
+  let count = 0;
+
+  const cleaned = orders.map(o => {
+    // Si tiene imagen y es de hace más de 1 día y está entregado, borrar imagen
+    if (o.receiptBase64 && (now - new Date(o.createdAt).getTime()) > ONE_DAY && o.status === 'entregado') {
+      delete o.receiptBase64;
+      
+      // Actualizamos solo este pedido en Firebase para liberar el espacio allá también
+      if (window.FirebaseDB) {
+        const cleanId = String(o.id).replace(/[\.\$#\[\]\/]/g, '_');
+        window.FirebaseDB.update(storage.orders + '/' + cleanId, { receiptBase64: null })
+          .catch(e => console.warn('Error limpiando imagen en Firebase:', e));
+      }
+      count++;
+    }
+    return o;
+  });
+
+  if (count > 0) {
+    localStorage.setItem(storage.orders, JSON.stringify(cleaned));
+    renderAll();
+    showToast(`✅ Se liberó espacio borrando ${count} comprobantes antiguos (el pedido queda intacto).`);
+  } else {
+    showToast('No hay comprobantes antiguos para limpiar.');
+  }
+};
 
 function renderOrders() {
   const orders = getOrders();

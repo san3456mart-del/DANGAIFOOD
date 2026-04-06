@@ -42,6 +42,16 @@
     },
 
     /**
+     * Updates an object or collection partially in Firebase.
+     */
+    update: function (key, updates) {
+      return db.ref(key).update(updates).catch(function (err) {
+        console.error('Firebase update error:', err);
+        throw err;
+      });
+    },
+
+    /**
      * Saves a value to Firebase and returns the Promise.
      */
     save: function (key, value) {
@@ -51,6 +61,7 @@
       });
     }
   };
+
 
   const keys = window.RestaurantAppConfig.storageKeys;
   window.FirebaseDB.syncKey(keys.products);

@@ -48,10 +48,31 @@ let paymentReceiptBase64 = null;
 let appliedCouponId = null;  // currently applied coupon ID
 
 const money = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(n || 0));
-const getJson = (key, fallback) => JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
+const getJson = (key, fallback) => {
+  let data;
+  try {
+    data = JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
+  } catch(e) {
+    return fallback;
+  }
+  // Convert object to array if it's the orders key (handles granular Firebase updates)
+  if (key === storage.orders && data && !Array.isArray(data)) {
+    return Object.values(data).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+  return data;
+};
+
 const setJson = (key, value) => {
-  localStorage.setItem(key, JSON.stringify(value));
-  // Fire-and-forget to Firebase – never block the UI
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (err) {
+    if (err.name === 'QuotaExceededError' || err.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+      console.warn('¡Almacenamiento Local Lleno! Se guardará solo en Firebase.');
+    } else {
+      console.error('Error guardando en localStorage:', err);
+    }
+  }
+
   if (window.FirebaseDB) {
     window.FirebaseDB.save(key, value).catch(err => console.warn('Firebase sync error:', err));
   }
@@ -735,9 +756,19 @@ async function submitOrder() {
       deviceId: deviceId
     };
 
-    const orders = getJson(storage.orders, []);
+    const orders = getJson(storage.orders, []); // get current local orders
     orders.unshift(order);
+    
+    // Guardar imagen pesada: si falla localStorage, se guardará igual en Firebase
     await setJson(storage.orders, orders);
+
+    // ACTUALIZACIÓN GRANULAR en Firebase: Sólo insertamos este nuevo pedido
+    // Esto evita pisar los pedidos que hayan llegado en otros dispositivos.
+    if (window.FirebaseDB) {
+      const cleanId = String(order.id).replace(/[\.\$#\[\]\/]/g, '_');
+      window.FirebaseDB.update(storage.orders + '/' + cleanId, order)
+        .catch(err => console.error('Error enviando pedido granular:', err));
+    }
 
     const updatedProducts = products.map((product) => {
       const nextStock = { ...(product.stock || {}) };

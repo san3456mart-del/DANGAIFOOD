@@ -262,6 +262,16 @@
           <h2>Comprobantes de Clientes</h2>
         </div>
         <p class="helper-text">Revisa los pagos digitales pendientes por validar.</p>
+        <div class="card" style="margin-top: 24px; border: 1.5px solid var(--primary); background: rgba(255,107,53,0.05);">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding:16px;">
+            <div>
+              <strong style="display:block; color:var(--primary); margin-bottom:4px;">🧹 Mantenimiento de Memoria</strong>
+              <small class="helper-text">Si notas que el panel está lento o te sale un aviso de memoria llena, borra las imágenes de pedidos que ya fueron entregados hace más de 24 horas.</small>
+            </div>
+            <button class="ghost-btn" style="border-color:var(--primary); color:var(--primary); white-space:nowrap;" onclick="cleanupOldReceipts()">Limpiar comprobantes antiguos</button>
+          </div>
+        </div>
+
         <div id="pendingPaymentsList" class="order-list"></div>
       </section>
 
