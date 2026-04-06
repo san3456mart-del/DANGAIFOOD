@@ -9,9 +9,12 @@ const getJson = (key, fallback) => {
   } catch(e) {
     return fallback;
   }
-  // Convert object to array if it's the orders key (handles granular Firebase updates)
-  if (key === storage.orders && data && !Array.isArray(data)) {
-    return Object.values(data).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+  // Convert object to array if it's the orders or users key (handles granular Firebase updates)
+  if ((key === storage.orders || key === storage.users) && data && !Array.isArray(data)) {
+    if (key === storage.orders) {
+      return Object.values(data).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+    return Object.values(data);
   }
   return data;
 };

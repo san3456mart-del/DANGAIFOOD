@@ -55,9 +55,12 @@ const getJson = (key, fallback) => {
   } catch(e) {
     return fallback;
   }
-  // Convert object to array if it's the orders key (handles granular Firebase updates)
-  if (key === storage.orders && data && !Array.isArray(data)) {
-    return Object.values(data).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+  // Convert object to array if it's the orders or users key (handles granular Firebase updates)
+  if ((key === storage.orders || key === storage.users) && data && !Array.isArray(data)) {
+    if (key === storage.orders) {
+      return Object.values(data).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+    return Object.values(data);
   }
   return data;
 };
@@ -169,7 +172,7 @@ function loadProfile() {
   if (nameInput) {
     nameInput.value = profile.name || '';
     const phoneInput = document.getElementById('guestPhone');
-    if (phoneInput) phoneInput.value = profile.phone || '';
+    if (phoneInput) phoneInput.value = profile.phone || profile.whatsapp || '';
     const complexInput = document.getElementById('guestComplex');
     if (complexInput) complexInput.value = profile.complex || '';
     const towerInput = document.getElementById('guestTower');
@@ -179,6 +182,89 @@ function loadProfile() {
   }
 
   return true;
+}
+
+/**
+ * Busca un usuario existente en la base de datos global usando cel, torre y apto.
+ */
+function lookupUser() {
+  const phoneInput = document.getElementById('guestPhone');
+  const towerInput = document.getElementById('guestTower');
+  const apartmentInput = document.getElementById('guestApartment');
+  const nameInput = document.getElementById('guestName');
+  const complexInput = document.getElementById('guestComplex');
+
+  const phone = phoneInput ? phoneInput.value.trim() : '';
+  const tower = towerInput ? towerInput.value.trim() : '';
+  const apt = apartmentInput ? apartmentInput.value.trim() : '';
+
+  // Necesitamos los 3 datos clave para identificarlo sin login
+  if (phone.length >= 10 && tower && apt) {
+    const users = getJson(storage.users, []);
+    const match = users.find(u => 
+      String(u.phone || u.whatsapp) === phone && 
+      String(u.tower) === tower && 
+      String(u.apartment) === apt
+    );
+
+    if (match) {
+      if (nameInput && !nameInput.value) nameInput.value = match.name || '';
+      if (complexInput && !complexInput.value) complexInput.value = match.complex || '';
+      
+      // Actualizamos perfil local para cargar cupones y otros datos
+      const profile = {
+        clientId: match.clientId || match.id || deviceId,
+        username: match.username || ('invitado_' + phone),
+        name: match.name,
+        phone: match.phone || match.whatsapp,
+        complex: match.complex,
+        tower: match.tower,
+        apartment: match.apartment,
+        isGuest: true
+      };
+      
+      localStorage.setItem(storage.profile, JSON.stringify(profile));
+      toastMessage(`¡Bienvenido de nuevo, ${match.name}! 👋`);
+      renderCoupons();
+    }
+  }
+}
+
+/**
+ * Registra o actualiza al cliente en la base de datos global tras su compra.
+ */
+function updateUsersList(profile) {
+  const users = getJson(storage.users, []);
+  const phone = profile.phone || profile.whatsapp;
+  const idx = users.findIndex(u => 
+    String(u.phone || u.whatsapp) === String(phone) && 
+    String(u.tower) === String(profile.tower) && 
+    String(u.apartment) === String(profile.apartment)
+  );
+
+  const userData = {
+    ...profile,
+    id: profile.clientId || deviceId,
+    updatedAt: new Date().toISOString()
+  };
+
+  if (idx === -1) {
+    users.push(userData);
+  } else {
+    users[idx] = { ...users[idx], ...userData };
+  }
+
+  // Guardamos localmente (best effort)
+  try {
+    localStorage.setItem(storage.users, JSON.stringify(users));
+  } catch(e) {}
+
+  // Persistencia granular en Firebase para evitar sobrescrituras
+  if (window.FirebaseDB) {
+    const userKey = `${phone}_${profile.tower}_${profile.apartment}`.replace(/[\.\$#\[\]\/]/g, '_');
+    window.FirebaseDB.update(storage.users + '/' + userKey, userData)
+      .catch(err => console.warn('Error sincronizando usuario:', err));
+  }
 }
 
 function renderSizeTabs() {
@@ -790,6 +876,9 @@ async function submitOrder() {
       }
     }
 
+    // Update global users list
+    updateUsersList(profile);
+
     cart = [];
     notesInput.value = '';
     if (clientReceiptInput) clientReceiptInput.value = '';
@@ -1131,6 +1220,12 @@ function renderOrdersHistory() {
     }
   });
 }
+
+// Attach listeners for auto-identification
+['guestPhone', 'guestTower', 'guestApartment'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', lookupUser);
+});
 
 renderSizeTabs();
 renderMenu();
