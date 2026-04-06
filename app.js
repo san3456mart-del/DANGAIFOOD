@@ -120,7 +120,23 @@ function ensureProducts() {
 
 function getProducts() {
   ensureProducts();
-  return getJson(storage.products, []);
+  let current = getJson(storage.products, []);
+
+  // REPARACIÓN: Corregir singular 'pizza' a 'pizzas' plural
+  let repairNeeded = false;
+  current = current.map(p => {
+    if (p.category === 'pizza') {
+      p.category = 'pizzas';
+      repairNeeded = true;
+    }
+    return p;
+  });
+
+  if (repairNeeded) {
+    setJson(storage.products, current);
+  }
+
+  return current;
 }
 
 function getExtras() {

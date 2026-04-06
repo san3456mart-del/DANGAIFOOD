@@ -64,12 +64,14 @@
 
 
   const keys = window.RestaurantAppConfig.storageKeys;
+  // Sincronizar todos los módulos críticos con Firebase
   window.FirebaseDB.syncKey(keys.products);
   window.FirebaseDB.syncKey(keys.orders);
-  if (keys.users)      window.FirebaseDB.syncKey(keys.users);
-  if (keys.settings)   window.FirebaseDB.syncKey(keys.settings);
-  if (keys.extras)     window.FirebaseDB.syncKey(keys.extras);
-  if (keys.expenses)   window.FirebaseDB.syncKey(keys.expenses);
-  if (keys.cashCounts) window.FirebaseDB.syncKey(keys.cashCounts);
+  window.FirebaseDB.syncKey(keys.users);
+  window.FirebaseDB.syncKey(keys.settings);
+  window.FirebaseDB.syncKey(keys.extras);
+  window.FirebaseDB.syncKey(keys.expenses);
+  window.FirebaseDB.syncKey(keys.cashCounts);
+  window.FirebaseDB.syncKey(keys.profile);
   window.FirebaseDB.syncKey('restaurant_coupons_v2');
 })();

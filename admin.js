@@ -5,16 +5,21 @@ const money = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currenc
 const getJson = (key, fallback) => {
   let data;
   try {
-    data = JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    data = JSON.parse(raw);
   } catch(e) {
     return fallback;
   }
-  // Convert object to array if it's the orders or users key (handles granular Firebase updates)
-  if ((key === storage.orders || key === storage.users) && data && !Array.isArray(data)) {
+  
+  // Garantizar que ciertos módulos siempre sean arreglos (Firebase suele convertir arreglos en objetos con índices numéricos)
+  const arrayKeys = [storage.products, storage.orders, storage.users, storage.expenses, storage.extras, storage.cashCounts];
+  if (arrayKeys.includes(key) && data && typeof data === 'object' && !Array.isArray(data)) {
+    let arr = Object.values(data);
     if (key === storage.orders) {
-      return Object.values(data).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+      arr = arr.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
-    return Object.values(data);
+    return arr;
   }
   return data;
 };
@@ -100,7 +105,7 @@ if (productCategorySelect) {
 if (dynamicSizeCards) {
   dynamicSizeCards.innerHTML = Object.entries(sizes).map(([key, info]) => `
     <div class="size-edit-card" data-card-cat="${key}">
-      <h3 style="color:var(--primary);">${info.shortLabel}</h3>
+      <h3 style="color:var(--primary);">${info.shortLabel || info.label}</h3>
       <label>Precio<input id="price_${key}" type="number" min="0" step="100" value="0" /></label>
       <label>Costo<input id="cost_${key}" type="number" min="0" step="100" value="0" /></label>
       <label>Stock<input id="stock_${key}" type="number" min="0" step="1" value="0" /></label>
@@ -120,7 +125,24 @@ function showToast(message) {
 
 function getOrders() { return getJson(storage.orders, []); }
 function getProducts() {
-  const current = getJson(storage.products, []);
+  let current = getJson(storage.products, []);
+  
+  // REPARACIÓN CRÍTICA: Corregir productos con categoría 'pizza' (singular) a 'pizzas' (plural)
+  // Esto soluciona el error donde los productos "desaparecen" del menú del cliente.
+  let repairNeeded = false;
+  current = current.map(p => {
+    if (p.category === 'pizza') {
+      p.category = 'pizzas';
+      repairNeeded = true;
+    }
+    return p;
+  });
+
+  if (repairNeeded) {
+    console.warn('Se detectaron y corrigieron productos con categoría singular.');
+    setJson(storage.products, current);
+  }
+
   if (!current.length) {
     setJson(storage.products, cfg.defaultProducts);
     return cfg.defaultProducts;
@@ -759,8 +781,17 @@ function checkSession() {
 }
 
 async function hashPass(str) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  try {
+    if (!crypto?.subtle) {
+      // Fallback muy básico si no hay crypto (ej. navegador muy antiguo o contexto no seguro)
+      return str; 
+    }
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch (e) {
+    console.error('Error en hashPass:', e);
+    return str;
+  }
 }
 
 loginForm.addEventListener('submit', async (e) => {
@@ -776,8 +807,9 @@ loginForm.addEventListener('submit', async (e) => {
   
   try {
     const hash = await hashPass(pass);
-    // Verificar que el usuario sea admin y que la contraseña coincida con familia12 a través de su hash
-    if (user === 'dangai2026_admin' && hash === '8072db95acfdbcc1ba779cc6738253eb8fd3b05b691dc181af6ab1fe41f802f3') { // familia12
+    const expectedHash = '8072db95acfdbcc1ba779cc6738253eb8fd3b05b691dc181af6ab1fe41f802f3'; // familia12
+    
+    if (user === 'dangai2026_admin' && (hash === expectedHash || pass === 'familia12')) {
       localStorage.setItem(storage.adminSession, 'true');
       soundArmed = true;
       showToast('Bienvenido al panel.');
@@ -786,7 +818,8 @@ loginForm.addEventListener('submit', async (e) => {
       showToast('Usuario o contraseña incorrectos.');
     }
   } catch (err) {
-    showToast('Error interno validando contraseña.');
+    console.error('Login error:', err);
+    showToast('Error al procesar el inicio de sesión.');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Entrar';
@@ -801,9 +834,18 @@ logoutBtn.addEventListener('click', () => {
 productForm.addEventListener('submit', (e) => {
   e.preventDefault();
   const id = document.getElementById('productId').value.trim();
+  
+  // Detectar la categoría correcta
+  let category = document.getElementById('productCategorySelect').value;
+  if (category === 'all') {
+    // Si está en "Todas", intentamos detectar la categoría por el primer precio configurado
+    const priceKey = Object.keys(sizes).find(k => Number(document.getElementById(`price_${k}`)?.value || 0) > 0);
+    category = priceKey ? priceKey.split('_')[0] : 'pizzas';
+  }
+
   const product = {
     id: id || crypto.randomUUID(),
-    category: 'pizza',
+    category: category,
     name: document.getElementById('productName').value.trim(),
     ingredients: document.getElementById('productIngredients').value.trim(),
     removableOptions: document.getElementById('productOptions').value.split(',').map((item) => item.trim()).filter(Boolean),
