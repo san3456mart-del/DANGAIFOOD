@@ -350,121 +350,118 @@ function renderOrders() {
   const paymentLabel = m => m === 'qr' ? '📱 QR' : m === 'breb' ? '🔑 Bre-B' : '💵 Efectivo';
 
   ordersList.innerHTML = sorted.map((order, idx) => {
-    const sm = statusMeta[order.status] || statusMeta.pendiente;
-    const isActive = order.status !== 'entregado';
-    const discount = order.discount > 0 ? `<span style="color:var(--success);font-weight:700;">-${money(order.discount)}</span>` : '';
+    try {
+      const sm = statusMeta[order.status] || statusMeta.pendiente;
+      const isActive = order.status !== 'entregado';
+      const discount = (order.discount || 0) > 0 ? `<span style="color:var(--success);font-weight:700;">-${money(order.discount)}</span>` : '';
 
-    // Items list (Defensivo: (order.items || []))
-    const itemsList = (order.items || []).map(item =>
-      `<div class="oc-item-row">
-        <span class="oc-item-dot" style="background:${sm.color};"></span>
-        <span class="oc-item-name">${escapeHTML(item.name)}</span>
-        <span class="oc-item-size">${escapeHTML(item.sizeLabel || '')}</span>
-        ${item.removed?.length ? `<span class="oc-item-removed">sin ${escapeHTML(item.removed.join(', '))}</span>` : ''}
-        ${(item.extras || []).length ? `<div class="oc-item-extras">${item.extras.map(e => `<span>+ ${escapeHTML(e.name)}${e.qty > 1 ? ` (x${e.qty})` : ''}</span>`).join('')}</div>` : ''}
-        <span class="oc-item-price">${money(item.price)}</span>
-      </div>`
-    ).join('');
+      // Items list (Defensivo: (order.items || []))
+      const itemsList = (order.items || []).map(item =>
+        `<div class="oc-item-row">
+          <span class="oc-item-dot" style="background:${sm.color};"></span>
+          <span class="oc-item-name">${escapeHTML(item.name || 'Producto')}</span>
+          <span class="oc-item-size">${escapeHTML(item.sizeLabel || '')}</span>
+          ${item.removed?.length ? `<span class="oc-item-removed">sin ${escapeHTML(item.removed.join(', '))}</span>` : ''}
+          ${(item.extras || []).length ? `<div class="oc-item-extras">${item.extras.map(e => `<span>+ ${escapeHTML(e.name)}${e.qty > 1 ? ` (x${e.qty})` : ''}</span>`).join('')}</div>` : ''}
+          <span class="oc-item-price">${money(item.price || 0)}</span>
+        </div>`
+      ).join('');
 
-    // Payment block
-    const payBlock = `
-      <div class="oc-pay-row">
-        <span>${paymentLabel(order.paymentMethod)}</span>
-        ${order.paymentMethod && order.paymentMethod !== 'efectivo'
-          ? order.paymentConfirmed
-            ? `<span class="oc-tag success">✅ Pago confirmado</span>`
-            : `<span class="oc-tag warning">⏳ Pendiente</span>
-               <button class="oc-action-btn" onclick="confirmPayment('${order.id}')">Validar pago</button>`
-          : ''}
-        ${order.receiptBase64
-          ? `<a href="javascript:void(0)" onclick="const w=window.open('','_blank');w.document.write('<body style=\\'margin:0;display:flex;justify-content:center;align-items:center;background:#222;height:100vh;\\'><img src=\\'${order.receiptBase64}\\' style=\\'max-width:500px;max-height:95vh;object-fit:contain;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.5);\\'/></body>');return false;"
-              class="oc-action-btn">🖼️ Comprobante</a>`
-          : ''}
-      </div>`;
+      // ... resto del bloque ...
+      const payBlock = `
+        <div class="oc-pay-row">
+          <span>${paymentLabel(order.paymentMethod)}</span>
+          ${order.paymentMethod && order.paymentMethod !== 'efectivo'
+            ? order.paymentConfirmed
+              ? `<span class="oc-tag success">✅ Pago confirmado</span>`
+              : `<span class="oc-tag warning">⏳ Pendiente</span>
+                 <button class="oc-action-btn" onclick="confirmPayment('${order.id}')">Validar pago</button>`
+            : ''}
+          ${order.receiptBase64
+            ? `<a href="javascript:void(0)" onclick="const w=window.open('','_blank');w.document.write('<body style=\\'margin:0;display:flex;justify-content:center;align-items:center;background:#222;height:100vh;\\'><img src=\\'${order.receiptBase64}\\' style=\\'max-width:500px;max-height:95vh;object-fit:contain;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.5);\\'/></body>');return false;"
+                class="oc-action-btn">🖼️ Comprobante</a>`
+            : ''}
+        </div>`;
 
-    // Coupon
-    const couponBlock = order.couponId ? `
-      <div class="oc-info-row">
-        <span class="oc-label">🎟️ Cupón</span>
-        <span style="color:var(--success);font-weight:600;">${order.couponId} &mdash; Descuento: ${money(order.discount || 0)}</span>
-      </div>` : '';
+      const couponBlock = order.couponId ? `
+        <div class="oc-info-row">
+          <span class="oc-label">🎟️ Cupón</span>
+          <span style="color:var(--success);font-weight:600;">${order.couponId} &mdash; Descuento: ${money(order.discount || 0)}</span>
+        </div>` : '';
 
-    // Rating
-    const ratingBlock = order.rating ? `
-      <div class="oc-rating-bar">
-        <span style="font-weight:700;color:var(--warning)">${'★'.repeat(order.rating)}${'☆'.repeat(5 - order.rating)}</span>
-        ${order.review ? `<em style="color:var(--muted);font-size:0.85rem;">"${escapeHTML(order.review)}"</em>` : ''}
-      </div>` : '';
+      const ratingBlock = order.rating ? `
+        <div class="oc-rating-bar">
+          <span style="font-weight:700;color:var(--warning)">${'★'.repeat(order.rating)}${'☆'.repeat(5 - order.rating)}</span>
+          ${order.review ? `<em style="color:var(--muted);font-size:0.85rem;">"${escapeHTML(order.review)}"</em>` : ''}
+        </div>` : '';
 
-    // Status buttons
-    const statusBtns = ['pendiente','preparacion','encamino','entregado'].map(s => {
-      const active = order.status === s;
-      const sm2 = statusMeta[s];
-      return `<button class="oc-status-btn ${active ? 'oc-status-active' : ''}"
-        style="${active ? `background:${sm2.color};color:#fff;border-color:${sm2.color};` : ''}"
-        data-status="${s}" data-order-id="${order.id}">
-        ${sm2.icon} ${sm2.label}
-      </button>`;
-    }).join('');
+      const statusBtns = ['pendiente','preparacion','encamino','entregado'].map(s => {
+        const active = order.status === s;
+        const sm2 = statusMeta[s];
+        return `<button class="oc-status-btn ${active ? 'oc-status-active' : ''}"
+          style="${active ? `background:${sm2.color};color:#fff;border-color:${sm2.color};` : ''}"
+          data-status="${s}" data-order-id="${order.id}">
+          ${sm2.icon} ${sm2.label}
+        </button>`;
+      }).join('');
 
-    return `
-    <article class="oc-card" style="border-left:4px solid ${sm.color};">
-      <!-- HEADER -->
-      <div class="oc-header" style="background:${sm.bg};">
-        <div class="oc-header-left">
-          <span class="oc-num" style="background:${sm.color};">${idx + 1}</span>
-          <div>
-            <div class="oc-id">${escapeHTML(order.id)}</div>
-            <div class="oc-meta">${formatDate(order.createdAt)}</div>
-            ${isActive ? `
-              <div style="margin-top:8px; display:flex; align-items:center; gap:6px; background:#fff; border:1px solid var(--line); padding:4px 10px; border-radius:10px; font-weight:700; width:fit-content;">
-                <span style="font-size:0.9rem;">⏱️</span>
-                <span class="order-countdown" data-created="${order.createdAt}" style="font-size:1.1rem;font-variant-numeric:tabular-nums;line-height:1.1;">--:--</span>
-              </div>
-            ` : ''}
+      return `
+      <article class="oc-card" style="border-left:4px solid ${sm.color};">
+        <div class="oc-header" style="background:${sm.bg};">
+          <div class="oc-header-left">
+            <span class="oc-num" style="background:${sm.color};">${idx + 1}</span>
+            <div>
+              <div class="oc-id">${escapeHTML(order.id)}</div>
+              <div class="oc-meta">${formatDate(order.createdAt)}</div>
+              ${isActive ? `
+                <div style="margin-top:8px; display:flex; align-items:center; gap:6px; background:#fff; border:1px solid var(--line); padding:4px 10px; border-radius:10px; font-weight:700; width:fit-content;">
+                  <span style="font-size:0.9rem;">⏱️</span>
+                  <span class="order-countdown" data-created="${order.createdAt}" style="font-size:1.1rem;font-variant-numeric:tabular-nums;line-height:1.1;">--:--</span>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+          <div class="oc-header-right">
+            <span class="oc-status-pill" style="background:${sm.bg};color:${sm.color};border:1px solid ${sm.border};">
+              ${sm.icon} ${sm.label}
+            </span>
+            <span class="oc-total">${money(order.total || 0)}</span>
           </div>
         </div>
-        <div class="oc-header-right">
-          <span class="oc-status-pill" style="background:${sm.bg};color:${sm.color};border:1px solid ${sm.border};">
-            ${sm.icon} ${sm.label}
-          </span>
-          <span class="oc-total">${money(order.total)}</span>
-        </div>
-      </div>
 
-      <!-- BODY: Two columns -->
-      <div class="oc-body">
-        <!-- LEFT: Client & location -->
-        <div class="oc-col">
-          <p class="oc-col-title">👤 Cliente</p>
-          <div class="oc-info-row"><span class="oc-label">Nombre</span><strong>${escapeHTML(order.customer.name)}</strong></div>
-          <div class="oc-info-row"><span class="oc-label">Ubicación</span><span>${escapeHTML(order.customer.complex)}, T${escapeHTML(order.customer.tower)}, Apto ${escapeHTML(order.customer.apartment)}</span></div>
-          ${order.customer.phone ? `<div class="oc-info-row"><span class="oc-label">Teléfono</span><a href="https://wa.me/57${order.customer.phone.replace(/\D/g,'')}" target="_blank" style="color:var(--success);font-weight:600;text-decoration:none;">💬 ${escapeHTML(order.customer.phone)}</a></div>` : ''}
-          ${order.notes ? `<div class="oc-info-row"><span class="oc-label">Nota</span><em style="color:var(--muted);">${escapeHTML(order.notes)}</em></div>` : ''}
-          ${couponBlock}
-        </div>
-
-        <!-- RIGHT: Items & payment -->
-        <div class="oc-col">
-          <p class="oc-col-title">🍕 Pedido</p>
-          <div class="oc-items-list">${itemsList}</div>
-          <div class="oc-price-summary">
-            ${order.discount > 0 ? `<div class="oc-price-row"><span>Descuento</span>${discount}</div>` : ''}
-            <div class="oc-price-row oc-price-total"><span>Total</span><strong>${money(order.total)}</strong></div>
+        <div class="oc-body">
+          <div class="oc-col">
+            <p class="oc-col-title">👤 Cliente</p>
+            <div class="oc-info-row"><span class="oc-label">Nombre</span><strong>${escapeHTML(order.customer?.name || 'Cliente Desconocido')}</strong></div>
+            <div class="oc-info-row"><span class="oc-label">Ubicación</span><span>${escapeHTML(order.customer?.complex || '-')}, T${escapeHTML(order.customer?.tower || '-')}, Apto ${escapeHTML(order.customer?.apartment || '-')}</span></div>
+            ${order.customer?.phone ? `<div class="oc-info-row"><span class="oc-label">Teléfono</span><a href="https://wa.me/57${order.customer.phone.replace(/\D/g,'')}" target="_blank" style="color:var(--success);font-weight:600;text-decoration:none;">💬 ${escapeHTML(order.customer.phone)}</a></div>` : ''}
+            ${order.notes ? `<div class="oc-info-row"><span class="oc-label">Nota</span><em style="color:var(--muted);">${escapeHTML(order.notes)}</em></div>` : ''}
+            ${couponBlock}
           </div>
-          <p class="oc-col-title" style="margin-top:12px;">💳 Pago</p>
-          ${payBlock}
+
+          <div class="oc-col">
+            <p class="oc-col-title">🍕 Pedido</p>
+            <div class="oc-items-list">${itemsList}</div>
+            <div class="oc-price-summary">
+              ${(order.discount || 0) > 0 ? `<div class="oc-price-row"><span>Descuento</span>${discount}</div>` : ''}
+              <div class="oc-price-row oc-price-total"><span>Total</span><strong>${money(order.total || 0)}</strong></div>
+            </div>
+            <p class="oc-col-title" style="margin-top:12px;">💳 Pago</p>
+            ${payBlock}
+          </div>
         </div>
-      </div>
 
-      ${ratingBlock}
+        ${ratingBlock}
 
-      <!-- FOOTER: Status + Delete -->
-      <div class="oc-footer">
-        <div class="oc-status-group">${statusBtns}</div>
-        <button class="oc-delete-btn" data-delete-id="${order.id}">🗑️ Eliminar</button>
-      </div>
-    </article>`;
+        <div class="oc-footer">
+          <div class="oc-status-group">${statusBtns}</div>
+          <button class="oc-delete-btn" data-delete-id="${order.id}">🗑️ Eliminar</button>
+        </div>
+      </article>`;
+    } catch (e) {
+      console.error('Error renderizando pedido:', e, order);
+      return `<div class="oc-card error">❌ Error en pedido ${order?.id || '?'}. Datos corruptos.</div>`;
+    }
   }).join('');
 
   ordersList.querySelectorAll('[data-status]').forEach(btn =>
@@ -758,15 +755,20 @@ function renderCustomers() {
 
 function renderAll() {
   try {
-    renderOrders();
-    renderSales();
-    renderInventory();
+    // Módulos estadísticos primero para asegurar que siempre haya números
     renderDashboard();
-    renderSettings();
-    renderPendingPayments();
+    renderSales();
+    renderCashRegister();
+    
+    // Listados después (con sus propias protecciones internas)
+    renderOrders();
+    renderInventory();
     renderCustomers();
     renderAdditionals();
-    renderCashRegister();
+    renderSettings();
+    renderPendingPayments();
+    
+    console.log(`RenderAll completado: ${new Date().toLocaleTimeString()}`);
   } catch (err) {
     console.error('Error crítico en renderAll:', err);
   }
