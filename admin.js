@@ -18,6 +18,13 @@ const getJson = (key, fallback) => {
     let arr = Object.values(data);
     if (key === storage.orders) {
       arr = arr.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+      // DEDUPLICACIÓN POR ID para evitar pedidos fantasmas
+      const seen = new Set();
+      arr = arr.filter(o => {
+        if (!o?.id || seen.has(o.id)) return false;
+        seen.add(o.id);
+        return true;
+      });
     }
     return arr;
   }
@@ -26,23 +33,19 @@ const getJson = (key, fallback) => {
 
 const setJson = (key, value) => {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (err) {
-    if (err.name === 'QuotaExceededError' || err.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
-      console.warn('¡Almacenamiento Local Lleno!');
-    }
-  }
+    const raw = JSON.stringify(value);
+    localStorage.setItem(key, raw);
 
-  if (window.FirebaseDB) {
-    // PROTECCIÓN CRÍTICA: No sobrescribir masivamente el nodo de pedidos
-    // Si la clave es la de pedidos, usamos actualización granular si es posible, o evitamos el 'set' masivo
-    if (key === storage.orders) {
-      // En lugar de persistir TODA la lista (que borraría lo que el admin actual no ve),
-      // dejamos que las funciones como setStatus o submitOrder manejen su propia persistencia granular.
-      // Así los pedidos entrantes NUNCA se borrarán por un admin con datos viejos.
-      return; 
+    if (window.FirebaseDB) {
+      // Para pedidos, NO guardamos el arreglo completo masivamente aquí
+      // porque podría borrar pedidos entrantes de otros clientes.
+      // Las funciones setStatus() y deleteOrder() se encargan de actualizar Firebase por ID.
+      if (key === storage.orders) return; 
+      
+      window.FirebaseDB.save(key, value).catch(err => console.warn('Sync error:', err));
     }
-    window.FirebaseDB.save(key, value).catch(err => console.warn('Firebase sync error:', err));
+  } catch (err) {
+    console.error('localStorage error:', err);
   }
 };
 const escapeHTML = (value) => String(value || '')
@@ -255,19 +258,29 @@ window.confirmPayment = (orderId) => {
 };
 
 function deleteOrder(orderId) {
-  const orders = getOrders().filter((order) => order.id !== orderId);
-  // Guardamos localmente
+  if (!confirm(`¿Estás seguro de eliminar el pedido ${orderId}?`)) return;
+
+  const orders = getOrders().filter((o) => o.id !== orderId);
+  // Guardamos localmente para feedback inmediato
   localStorage.setItem(storage.orders, JSON.stringify(orders));
   
-  // ELIMINACIÓN EXPLÍCITA en Firebase: Sólo borramos este ID
+  // ELIMINACIÓN EXPLÍCITA en Firebase: Borramos el nodo específico
   if (window.FirebaseDB) {
+    // Sanitizar ID para Firebase
     const cleanId = String(orderId).replace(/[\.\$#\[\]\/]/g, '_');
     window.FirebaseDB.save(storage.orders + '/' + cleanId, null)
-      .catch(err => console.error('Error al borrar de Firebase:', err));
+      .then(() => {
+        showToast(`Pedido ${orderId} eliminado de la nube.`);
+        renderAll();
+      })
+      .catch(err => {
+        showToast('Error al borrar de la nube.');
+        console.error(err);
+      });
+  } else {
+    renderAll();
+    showToast(`Pedido ${orderId} eliminado localmente.`);
   }
-  
-  renderAll();
-  showToast(`Pedido ${orderId} eliminado.`);
 }
 
 /**
