@@ -1,6 +1,9 @@
 const cfg = window.RestaurantAppConfig;
-const storage = cfg.storageKeys;
-const sizes = cfg.sizes;
+if (!cfg) {
+  alert("CRÍTICO: No se cargó data.js correctamente. Recarga con Ctrl+F5.");
+}
+const storage = cfg?.storageKeys || {};
+const sizes = cfg?.sizes || {};
 const money = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(n || 0));
 const getJson = (key, fallback) => {
   let data;
@@ -131,7 +134,6 @@ function getProducts() {
   let current = getJson(storage.products, []);
   
   // REPARACIÓN CRÍTICA: Corregir productos con categoría 'pizza' (singular) a 'pizzas' (plural)
-  // Esto soluciona el error donde los productos "desaparecen" del menú del cliente.
   let repairNeeded = false;
   current = current.map(p => {
     if (p.category === 'pizza') {
@@ -142,16 +144,23 @@ function getProducts() {
   });
 
   if (repairNeeded) {
-    console.warn('Se detectaron y corrigieron productos con categoría singular.');
+    console.warn('Protección: Reparando categorías.');
     setJson(storage.products, current);
   }
 
-  if (!current.length) {
-    setJson(storage.products, cfg.defaultProducts);
-    return cfg.defaultProducts;
-  }
+  // NUNCA SOBREESCRIBIR AUTOMÁTICAMENTE: Si está vacío, simplemente devolvemos vacío.
+  // Esto evita borrar el menú en Firebase por un error de carga local.
   return current;
 }
+
+// Función manual para restaurar el menú si realmente se borró
+window.restoreDefaultMenu = () => {
+  if (confirm("¿Seguro que quieres borrar TODO e instalar el menú de fábrica?")) {
+    setJson(storage.products, cfg.defaultProducts);
+    renderAll();
+    showToast("Menú de fábrica restaurado.");
+  }
+};
 function saveProducts(products) { setJson(storage.products, products); }
 function saveOrders(orders) { setJson(storage.orders, orders); }
 
