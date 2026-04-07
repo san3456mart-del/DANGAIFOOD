@@ -105,7 +105,7 @@ if (productCategorySelect) {
 if (dynamicSizeCards) {
   dynamicSizeCards.innerHTML = Object.entries(sizes).map(([key, info]) => `
     <div class="size-edit-card" data-card-cat="${key}">
-      <h3 style="color:var(--primary);">${info.shortLabel || info.label}</h3>
+      <h3 style="color:var(--primary);">${info.shortLabel || info.label || key}</h3>
       <label>Precio<input id="price_${key}" type="number" min="0" step="100" value="0" /></label>
       <label>Costo<input id="cost_${key}" type="number" min="0" step="100" value="0" /></label>
       <label>Stock<input id="stock_${key}" type="number" min="0" step="1" value="0" /></label>
@@ -354,14 +354,14 @@ function renderOrders() {
     const isActive = order.status !== 'entregado';
     const discount = order.discount > 0 ? `<span style="color:var(--success);font-weight:700;">-${money(order.discount)}</span>` : '';
 
-    // Items list
-    const itemsList = order.items.map(item =>
+    // Items list (Defensivo: (order.items || []))
+    const itemsList = (order.items || []).map(item =>
       `<div class="oc-item-row">
         <span class="oc-item-dot" style="background:${sm.color};"></span>
         <span class="oc-item-name">${escapeHTML(item.name)}</span>
         <span class="oc-item-size">${escapeHTML(item.sizeLabel || '')}</span>
         ${item.removed?.length ? `<span class="oc-item-removed">sin ${escapeHTML(item.removed.join(', '))}</span>` : ''}
-        ${item.extras?.length ? `<div class="oc-item-extras">${item.extras.map(e => `<span>+ ${escapeHTML(e.name)}${e.qty > 1 ? ` (x${e.qty})` : ''}</span>`).join('')}</div>` : ''}
+        ${(item.extras || []).length ? `<div class="oc-item-extras">${item.extras.map(e => `<span>+ ${escapeHTML(e.name)}${e.qty > 1 ? ` (x${e.qty})` : ''}</span>`).join('')}</div>` : ''}
         <span class="oc-item-price">${money(item.price)}</span>
       </div>`
     ).join('');
@@ -757,15 +757,19 @@ function renderCustomers() {
 }
 
 function renderAll() {
-  renderOrders();
-  renderSales();
-  renderInventory();
-  renderDashboard();
-  renderSettings();
-  renderPendingPayments();
-  renderCustomers();
-  renderAdditionals();
-  renderCashRegister();
+  try {
+    renderOrders();
+    renderSales();
+    renderInventory();
+    renderDashboard();
+    renderSettings();
+    renderPendingPayments();
+    renderCustomers();
+    renderAdditionals();
+    renderCashRegister();
+  } catch (err) {
+    console.error('Error crítico en renderAll:', err);
+  }
 }
 
 function checkSession() {
