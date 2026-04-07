@@ -1,37 +1,67 @@
+/* ─── NÚCLEO DE CONFIGURACIÓN Y UTILIDADES ─────────────────────────── */
 const cfg = window.RestaurantAppConfig;
 if (!cfg) {
-  alert("CRÍTICO: No se cargó data.js correctamente. Recarga con Ctrl+F5.");
+  console.error("ERROR CRÍTICO: RestaurantAppConfig no encontrado en el objeto window.");
+  alert("CRÍTICO: No se cargó la configuración. Recarga con Ctrl+F5.");
 }
+
 const storage = cfg?.storageKeys || {};
 const sizes = cfg?.sizes || {};
-const money = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(n || 0));
+
+// Formateadores estándar
+const money = (n) => new Intl.NumberFormat('es-CO', { 
+  style: 'currency', currency: 'COP', maximumFractionDigits: 0 
+}).format(Number(n || 0));
+
+const formatDate = (date) => {
+  if (!date) return '-';
+  const d = new Date(date);
+  return isNaN(d.getTime()) ? '-' : d.toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
+};
+
+const escapeHTML = (value) => String(value || '')
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+/* ─── GESTIÓN DE PERSISTENCIA (LOCAL & NUBE) ───────────────────────── */
+
 const getJson = (key, fallback) => {
-  let data;
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return fallback;
-    data = JSON.parse(raw);
+    let data = JSON.parse(raw);
+    
+    // Módulos que obligatoriamente deben retornar Arreglos
+    const arrayKeys = [
+      storage.products, storage.orders, storage.users, 
+      storage.expenses, storage.extras, storage.cashCounts
+    ];
+
+    if (arrayKeys.includes(key)) {
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        data = Object.values(data);
+      }
+      if (!Array.isArray(data)) return fallback;
+
+      // Limpieza específica para pedidos
+      if (key === storage.orders) {
+        // Orden cronológico (nuevo primero)
+        data.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+        // Deduplicación por ID para evitar "pedidos fantasma"
+        const seen = new Set();
+        data = data.filter(o => {
+          const id = String(o?.id || '');
+          if (!id || seen.has(id)) return false;
+          seen.add(id);
+          return true;
+        });
+      }
+    }
+    return data;
   } catch(e) {
+    console.error(`Error leyendo ${key}:`, e);
     return fallback;
   }
-  
-  // Garantizar que ciertos módulos siempre sean arreglos (Firebase suele convertir arreglos en objetos con índices numéricos)
-  const arrayKeys = [storage.products, storage.orders, storage.users, storage.expenses, storage.extras, storage.cashCounts];
-  if (arrayKeys.includes(key) && data && typeof data === 'object' && !Array.isArray(data)) {
-    let arr = Object.values(data);
-    if (key === storage.orders) {
-      arr = arr.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
-      // DEDUPLICACIÓN POR ID para evitar pedidos fantasmas
-      const seen = new Set();
-      arr = arr.filter(o => {
-        if (!o?.id || seen.has(o.id)) return false;
-        seen.add(o.id);
-        return true;
-      });
-    }
-    return arr;
-  }
-  return data;
 };
 
 const setJson = (key, value) => {
@@ -40,23 +70,21 @@ const setJson = (key, value) => {
     localStorage.setItem(key, raw);
 
     if (window.FirebaseDB) {
-      // Para pedidos, NO guardamos el arreglo completo masivamente aquí
-      // porque podría borrar pedidos entrantes de otros clientes.
-      // Las funciones setStatus() y deleteOrder() se encargan de actualizar Firebase por ID.
+      // Pedidos: NO sobreescribir masivamente el nodo raíz para no borrar pedidos entrantes.
+      // Se delega la persistencia a funciones granulares (setStatus, deleteOrder).
       if (key === storage.orders) return; 
       
-      window.FirebaseDB.save(key, value).catch(err => console.warn('Sync error:', err));
+      window.FirebaseDB.save(key, value).catch(err => {
+        console.warn(`Error en respaldo Firebase (${key}):`, err);
+      });
     }
   } catch (err) {
-    console.error('localStorage error:', err);
+    if (err.name === 'QuotaExceededError') {
+      showToast('⚠️ Almacenamiento local lleno. Limpia comprobantes antiguos.');
+    }
+    console.error(`Error guardando ${key}:`, err);
   }
 };
-const escapeHTML = (value) => String(value || '')
-  .replace(/&/g, '&amp;')
-  .replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;')
-  .replace(/'/g, '&#39;');
 
 const toast = document.getElementById('toast');
 const loginSection = document.getElementById('loginSection');
@@ -252,43 +280,43 @@ window.confirmPayment = (orderId) => {
   const idx = orders.findIndex(o => o.id === orderId);
   if (idx > -1) {
     orders[idx].paymentConfirmed = true;
-    saveOrders(orders);
+    // Guardar solo local para actualizar UI, Firebase usará update granular
+    localStorage.setItem(storage.orders, JSON.stringify(orders));
 
-    // Actualización granular para pago
     if (window.FirebaseDB) {
       const cleanId = String(orderId).replace(/[\.\$#\[\]\/]/g, '_');
-      window.FirebaseDB.update(storage.orders + '/' + cleanId, { paymentConfirmed: true })
-        .catch(err => console.error('Error en actualización granular pago:', err));
+      window.FirebaseDB.update(`${storage.orders}/${cleanId}`, { paymentConfirmed: true })
+        .then(() => showToast('✅ Pago validado en la nube.'))
+        .catch(err => console.error('Fallo sync pago:', err));
     }
 
     renderAll();
-    showToast('Pago de pedido confirmado.');
+    showToast('Validando pago...');
   }
 };
 
 function deleteOrder(orderId) {
-  if (!confirm(`¿Estás seguro de eliminar el pedido ${orderId}?`)) return;
+  if (!confirm(`¿Estás seguro de eliminar permanentemente el pedido ${orderId}?`)) return;
 
-  const orders = getOrders().filter((o) => o.id !== orderId);
-  // Guardamos localmente para feedback inmediato
+  // 1. Eliminación local inmediata
+  const orders = getOrders().filter(o => String(o.id) !== String(orderId));
   localStorage.setItem(storage.orders, JSON.stringify(orders));
   
-  // ELIMINACIÓN EXPLÍCITA en Firebase: Borramos el nodo específico
+  // 2. Eliminación recursiva en Firebase
   if (window.FirebaseDB) {
-    // Sanitizar ID para Firebase
     const cleanId = String(orderId).replace(/[\.\$#\[\]\/]/g, '_');
-    window.FirebaseDB.save(storage.orders + '/' + cleanId, null)
+    window.FirebaseDB.save(`${storage.orders}/${cleanId}`, null)
       .then(() => {
-        showToast(`Pedido ${orderId} eliminado de la nube.`);
+        showToast(`🗑️ Pedido ${orderId} eliminado.`);
         renderAll();
       })
       .catch(err => {
-        showToast('Error al borrar de la nube.');
+        showToast('❌ Error al eliminar de la nube. Intenta de nuevo.');
         console.error(err);
       });
   } else {
     renderAll();
-    showToast(`Pedido ${orderId} eliminado localmente.`);
+    showToast(`Eliminado localmente.`);
   }
 }
 
@@ -781,36 +809,45 @@ function renderCustomers() {
   });
 }
 
+/* ─── ORQUESTADOR CENTRAL DE RENDERIZADO ────────────────────────── */
+
 function renderAll() {
-  const tasks = [
-    { name: 'Estadísticas', fn: renderDashboard },
-    { name: 'Ventas', fn: renderSales },
-    { name: 'Caja', fn: renderCashRegister },
-    { name: 'Pedidos', fn: renderOrders },
-    { name: 'Inventario', fn: renderInventory },
-    { name: 'Clientes', fn: renderCustomers },
+  if (localStorage.getItem(storage.adminSession) !== 'true') return;
+
+  const components = [
+    { name: 'Dashboard',   fn: renderDashboard },
+    { name: 'Pedidos',     fn: renderOrders },
+    { name: 'Inventario',  fn: renderInventory },
+    { name: 'Ventas',      fn: renderSales },
+    { name: 'Caja',        fn: renderCashRegister },
+    { name: 'Clientes',    fn: renderCustomers },
     { name: 'Adicionales', fn: renderAdditionals },
-    { name: 'Ajustes', fn: renderSettings },
-    { name: 'Pagos Pendientes', fn: renderPendingPayments }
+    { name: 'Pagos',       fn: renderPendingPayments },
+    { name: 'Ajustes',     fn: renderSettings }
   ];
 
-  tasks.forEach(task => {
+  components.forEach(comp => {
     try {
-      task.fn();
+      if (typeof comp.fn === 'function') comp.fn();
     } catch (err) {
-      console.error(`Fallo en render_${task.name}:`, err);
+      console.warn(`Error renderizando componente [${comp.name}]:`, err);
     }
   });
 
-  console.log(`Renderizado completo: ${new Date().toLocaleTimeString()}`);
+  const now = new Date().toLocaleTimeString('es-CO');
+  console.log(`[UI] Sincronización completa: ${now}`);
 }
+
+/* ─── INICIALIZACIÓN Y EVENTOS ────────────────────────────────────── */
 
 function checkSession() {
   const session = localStorage.getItem(storage.adminSession);
   const loggedIn = session === 'true';
-  loginSection.classList.toggle('hidden', loggedIn);
-  adminPanel.classList.toggle('hidden', !loggedIn);
-  logoutBtn.classList.toggle('hidden', !loggedIn);
+  
+  if (loginSection) loginSection.classList.toggle('hidden', loggedIn);
+  if (adminPanel) adminPanel.classList.toggle('hidden', !loggedIn);
+  if (logoutBtn) logoutBtn.classList.toggle('hidden', !loggedIn);
+  
   if (loggedIn) {
     renderAll();
     soundArmed = true;
