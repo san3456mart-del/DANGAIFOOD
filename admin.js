@@ -493,17 +493,22 @@ function renderOrders() {
 }
 
 function renderSales() {
-  const delivered = getOrders().filter((order) => order.status === 'entregado');
-  salesTableBody.innerHTML = delivered.length ? delivered.map((order) => `
-    <tr>
-      <td>${escapeHTML(order.id)}</td>
-      <td>${escapeHTML(order.customer.name)}</td>
-      <td>${formatDate(order.createdAt)}</td>
-      <td>${money(order.total)}</td>
-      <td>${money(order.cost)}</td>
-      <td>${money(order.estimatedProfit)}</td>
-    </tr>
-  `).join('') : '<tr><td colspan="6">Aún no hay pedidos entregados.</td></tr>';
+  try {
+    const delivered = getOrders().filter((order) => order.status === 'entregado');
+    salesTableBody.innerHTML = delivered.length ? delivered.map((order) => `
+      <tr>
+        <td>${escapeHTML(order.id)}</td>
+        <td>${escapeHTML(order.customer?.name || 'Cliente Desconocido')}</td>
+        <td>${formatDate(order.createdAt)}</td>
+        <td>${money(order.total || 0)}</td>
+        <td>${money(order.cost || 0)}</td>
+        <td>${money(order.estimatedProfit || 0)}</td>
+      </tr>
+    `).join('') : '<tr><td colspan="6">Aún no hay pedidos entregados.</td></tr>';
+  } catch (err) {
+    console.error('Error renderSales:', err);
+    salesTableBody.innerHTML = '<tr><td colspan="6" style="color:var(--danger);">Error al cargar ventas.</td></tr>';
+  }
 }
 
 function fillProductForm(product) {
@@ -776,24 +781,27 @@ function renderCustomers() {
 }
 
 function renderAll() {
-  try {
-    // Módulos estadísticos primero para asegurar que siempre haya números
-    renderDashboard();
-    renderSales();
-    renderCashRegister();
-    
-    // Listados después (con sus propias protecciones internas)
-    renderOrders();
-    renderInventory();
-    renderCustomers();
-    renderAdditionals();
-    renderSettings();
-    renderPendingPayments();
-    
-    console.log(`RenderAll completado: ${new Date().toLocaleTimeString()}`);
-  } catch (err) {
-    console.error('Error crítico en renderAll:', err);
-  }
+  const tasks = [
+    { name: 'Estadísticas', fn: renderDashboard },
+    { name: 'Ventas', fn: renderSales },
+    { name: 'Caja', fn: renderCashRegister },
+    { name: 'Pedidos', fn: renderOrders },
+    { name: 'Inventario', fn: renderInventory },
+    { name: 'Clientes', fn: renderCustomers },
+    { name: 'Adicionales', fn: renderAdditionals },
+    { name: 'Ajustes', fn: renderSettings },
+    { name: 'Pagos Pendientes', fn: renderPendingPayments }
+  ];
+
+  tasks.forEach(task => {
+    try {
+      task.fn();
+    } catch (err) {
+      console.error(`Fallo en render_${task.name}:`, err);
+    }
+  });
+
+  console.log(`Renderizado completo: ${new Date().toLocaleTimeString()}`);
 }
 
 function checkSession() {
