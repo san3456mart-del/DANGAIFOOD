@@ -222,57 +222,247 @@ function deleteOrder(orderId) {
   }
 }
 
+// ─── debounce render para evitar re-renders duplicados de Firebase ───
+let _renderOrdersTimeout = null;
+function scheduleRenderOrders() {
+  clearTimeout(_renderOrdersTimeout);
+  _renderOrdersTimeout = setTimeout(renderOrders, 80);
+}
+
+function setStatus(orderId, newStatus) {
+  // Update locally first (optimistic)
+  const orders = getOrders().map(o => o.id === orderId ? { ...o, status: newStatus } : o);
+  localStorage.setItem(storage.orders, JSON.stringify(orders));
+
+  // Granular Firebase update (won't trigger full overwrite)
+  if (window.FirebaseDB) {
+    const cleanId = String(orderId).replace(/[.$#[\]\/]/g, '_');
+    window.FirebaseDB.update(storage.orders + '/' + cleanId, { status: newStatus })
+      .catch(err => console.error('Error actualizando estado:', err));
+  }
+
+  // Re-render only the orders panel (not full renderAll)
+  scheduleRenderOrders();
+  renderDashboard();
+  showToast(`✅ Pedido ${orderId} → ${STATUS_META[newStatus]?.label || newStatus}`);
+}
+
+const STATUS_META = {
+  pendiente:   { label: 'Pendiente',    color: '#d97706', bg: '#fef3c7', icon: '🕐', next: 'preparacion', nextLabel: '👨‍🍳 Iniciar preparación' },
+  preparacion: { label: 'Preparación',  color: '#059669', bg: '#d1fae5', icon: '👨‍🍳', next: 'encamino',    nextLabel: '🛵 Marcar en camino' },
+  encamino:    { label: 'En camino',    color: '#dc2626', bg: '#fee2e2', icon: '🛵', next: 'entregado',   nextLabel: '✅ Marcar entregado' },
+  entregado:   { label: 'Entregado',    color: '#6b7280', bg: '#f3f4f6', icon: '✅', next: null,          nextLabel: null },
+};
+
+const PAY_META = {
+  efectivo: { label: '💵 Efectivo', color: '#059669', bg: '#d1fae5' },
+  qr:       { label: '📱 QR',       color: '#7c3aed', bg: '#ede9fe' },
+  breb:     { label: '🔑 Bre-B',    color: '#1d4ed8', bg: '#dbeafe' },
+};
+
 function renderOrders() {
-  const orders = getOrders();
-  if (!orders.length) {
-    ordersList.innerHTML = `<div class="empty-state">Sin pedidos por ahora</div>`;
+  if (!ordersList) return;
+  const allOrders = getOrders();
+
+  if (!allOrders.length) {
+    ordersList.innerHTML = `<div class="empty-state" style="padding:48px 24px;">
+      <div style="font-size:3rem;margin-bottom:12px;">📭</div>
+      <strong style="font-size:1.1rem;color:var(--secondary);">Sin pedidos por ahora</strong>
+      <p style="color:var(--muted);margin:6px 0 0;font-size:0.9rem;">Los nuevos pedidos aparecerán aquí automáticamente.</p>
+    </div>`;
     return;
   }
-  maybePlaySound(orders[0]?.id);
+
+  maybePlaySound(allOrders[0]?.id);
 
   const query = (ordersSearchInput?.value || '').toLowerCase().trim();
-  const filtered = query ? orders.filter(o => 
-    (o.id || '').toLowerCase().includes(query) || 
-    (o.customer?.name || '').toLowerCase().includes(query) 
-  ) : orders;
+  const active = allOrders.filter(o => o.status !== 'entregado');
+  const delivered = allOrders.filter(o => o.status === 'entregado');
 
-  const statusMeta = {
-    pendiente:   { label: 'Pendiente',   color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', icon: '🕐' },
-    preparacion: { label: 'Preparación', color: '#10b981', bg: 'rgba(16,185,129,0.08)', icon: '👨‍🍳' },
-    encamino:    { label: 'En camino',   color: '#ff4500', bg: 'rgba(255,69,0,0.07)', icon: '🛵' },
-    entregado:   { label: 'Entregado',   color: '#6b7280', bg: 'rgba(107,114,128,0.06)', icon: '✅' },
-  };
+  // Show active first, then delivered collapsed
+  const filtered = query
+    ? allOrders.filter(o =>
+        (o.id || '').toLowerCase().includes(query) ||
+        (o.customer?.name || '').toLowerCase().includes(query) ||
+        (o.customer?.tower || '').toLowerCase().includes(query) ||
+        (o.customer?.apartment || '').toLowerCase().includes(query)
+      )
+    : [...active, ...delivered];
 
   ordersList.innerHTML = filtered.map((order, idx) => {
-    const sm = statusMeta[order.status] || statusMeta.pendiente;
+    const sm = STATUS_META[order.status] || STATUS_META.pendiente;
+    const pm = PAY_META[order.paymentMethod] || { label: order.paymentMethod || '—', color: '#6b7280', bg: '#f3f4f6' };
+    const isDelivered = order.status === 'entregado';
+    const orderNum = allOrders.findIndex(o => o.id === order.id) + 1;
+    const timeAgo = _timeAgo(order.createdAt);
+
+    // Payment confirmed badge
+    const payConfirmed = order.paymentMethod !== 'efectivo'
+      ? order.paymentConfirmed
+        ? `<span style="background:#d1fae5;color:#059669;padding:3px 10px;border-radius:999px;font-size:0.72rem;font-weight:700;">✅ Pago confirmado</span>`
+        : `<span style="background:#fef3c7;color:#d97706;padding:3px 10px;border-radius:999px;font-size:0.72rem;font-weight:700;">⏳ Pago pendiente</span>
+           <button onclick="window.confirmPayment('${order.id}')" style="background:#d1fae5;color:#059669;border:none;padding:3px 10px;border-radius:999px;font-size:0.72rem;font-weight:700;cursor:pointer;font-family:inherit;">✔ Validar</button>`
+      : '';
+
+    // Next status button
+    const nextBtn = sm.next
+      ? `<button onclick="setStatus('${order.id}','${sm.next}')"
+           style="flex:1;padding:12px 16px;border-radius:14px;border:none;
+                  background:${STATUS_META[sm.next].color};color:#fff;
+                  font-weight:800;font-size:0.88rem;cursor:pointer;font-family:inherit;
+                  transition:.15s;box-shadow:0 4px 12px rgba(0,0,0,0.12);">
+           ${sm.nextLabel}
+         </button>`
+      : `<span style="padding:12px 16px;font-size:0.85rem;color:var(--muted);font-weight:600;">✔ Pedido completado</span>`;
+
+    // Items list
+    const itemsHtml = (order.items || []).map(it => `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:8px 12px;
+                  background:var(--bg);border-radius:10px;gap:8px;margin-bottom:4px;">
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:0.88rem;color:var(--secondary);">${escapeHTML(it.name)}</div>
+          <div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">${escapeHTML(it.sizeLabel || '')}</div>
+          ${it.removed?.length ? `<div style="font-size:0.75rem;color:var(--danger);margin-top:2px;">Sin: ${escapeHTML(it.removed.join(', '))}</div>` : ''}
+          ${it.extras?.length ? `<div style="font-size:0.75rem;color:#7c3aed;margin-top:2px;">+${it.extras.map(e=>`${e.qty}× ${escapeHTML(e.name)}`).join(', ')}</div>` : ''}
+        </div>
+        <strong style="font-size:0.9rem;color:var(--primary);white-space:nowrap;">${money(it.price)}</strong>
+      </div>
+    `).join('');
+
+    // Notes
+    const notesHtml = order.notes
+      ? `<div style="margin-top:8px;padding:10px 12px;background:#fffbf0;border:1px dashed #f59e0b;border-radius:10px;font-size:0.82rem;color:#92400e;">
+           📝 <em>${escapeHTML(order.notes)}</em>
+         </div>`
+      : '';
+
+    // Status progress bar
+    const steps = ['pendiente','preparacion','encamino','entregado'];
+    const stepLabels = ['Pendiente','Preparación','En camino','Entregado'];
+    const curIdx = steps.indexOf(order.status);
+    const progressBar = `
+      <div style="display:flex;align-items:center;gap:0;border-top:1px solid var(--line);padding:14px 20px;background:#fcfcfd;">
+        ${steps.map((s, i) => {
+          const done = i <= curIdx;
+          const active = i === curIdx;
+          return `
+            ${i > 0 ? `<div style="flex:1;height:3px;background:${i <= curIdx ? STATUS_META[steps[curIdx]].color : 'var(--line)'};transition:.3s;border-radius:2px;opacity:${done?1:.3};"></div>` : ''}
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:60px;">
+              <div style="width:28px;height:28px;border-radius:50%;
+                          background:${done ? STATUS_META[steps[curIdx]].color : 'var(--line)'};
+                          display:flex;align-items:center;justify-content:center;
+                          font-size:${active?'0.85rem':'0.7rem'};
+                          box-shadow:${active?`0 0 0 3px ${STATUS_META[steps[curIdx]].bg}`:'none'};
+                          transition:.3s;">
+                ${done ? (active ? STATUS_META[s].icon : '✓') : ''}
+              </div>
+              <span style="font-size:0.65rem;font-weight:700;color:${done?STATUS_META[steps[curIdx]].color:'var(--muted)'};text-align:center;line-height:1.2;">${stepLabels[i]}</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+
     return `
-      <article class="oc-card" style="border-left:4px solid ${sm.color}; margin-bottom:12px; padding:12px; background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <strong>#${idx + 1} - ${escapeHTML(order.id)}</strong>
-          <span style="background:${sm.bg}; color:${sm.color}; padding:4px 8px; border-radius:6px; font-size:0.85rem;">${sm.icon} ${sm.label}</span>
-        </div>
-        <div style="font-size:0.9rem; margin-bottom:8px;">
-          <div>👤 <strong>${escapeHTML(order.customer?.name)}</strong></div>
-          <div>📍 ${escapeHTML(order.customer?.complex)}, T${escapeHTML(order.customer?.tower)}, A${escapeHTML(order.customer?.apartment)}</div>
-        </div>
-        <div style="border-top:1px solid #eee; padding-top:8px; margin-top:8px;">
-          ${(order.items || []).map(it => `<div>• ${escapeHTML(it.name)} (${escapeHTML(it.sizeLabel)}) - ${money(it.price)}</div>`).join('')}
-          <div style="margin-top:8px; display:flex; justify-content:space-between; align-items:center;">
-             <span>Método: ${order.paymentMethod}</span>
-             <strong style="font-size:1.1rem; color:var(--primary);">${money(order.total)}</strong>
+      <article style="background:#fff;border-radius:20px;overflow:hidden;
+                      box-shadow:0 2px 12px rgba(0,0,0,0.06);margin-bottom:14px;
+                      border:1.5px solid ${sm.color}22;
+                      transition:box-shadow .2s;position:relative;"
+               onmouseover="this.style.boxShadow='0 6px 24px rgba(0,0,0,0.1)'"
+               onmouseout="this.style.boxShadow='0 2px 12px rgba(0,0,0,0.06)'">
+
+        <!-- STATUS STRIPE -->
+        <div style="height:5px;background:${sm.color};width:100%;"></div>
+
+        <!-- HEADER -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;gap:12px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:38px;height:38px;border-radius:12px;background:${sm.bg};
+                        display:flex;align-items:center;justify-content:center;
+                        font-size:1.3rem;flex-shrink:0;">
+              ${sm.icon}
+            </div>
+            <div>
+              <div style="font-size:1rem;font-weight:800;color:var(--secondary);">#${orderNum} · ${escapeHTML(order.id)}</div>
+              <div style="font-size:0.75rem;color:var(--muted);margin-top:1px;">${timeAgo}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span style="background:${sm.bg};color:${sm.color};padding:5px 12px;border-radius:999px;font-size:0.78rem;font-weight:700;">
+              ${sm.icon} ${sm.label}
+            </span>
+            <strong style="font-size:1.3rem;font-weight:800;color:var(--secondary);">${money(order.total)}</strong>
           </div>
         </div>
-        <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap;">
-          ${['pendiente','preparacion','encamino','entregado'].map(s => `
-            <button onclick="setStatus('${order.id}', '${s}')" style="padding:6px 10px; border-radius:8px; border:1px solid #ddd; background:${order.status===s ? statusMeta[s].color : '#f9f9f9'}; color:${order.status===s ? '#fff' : '#444'}; cursor:pointer; font-size:0.8rem;">
-              ${statusMeta[s].label}
-            </button>
-          `).join('')}
-          <button onclick="deleteOrder('${order.id}')" style="padding:6px 10px; border-radius:8px; border:1px solid #ff4444; background:#fff; color:#ff4444; cursor:pointer; font-size:0.8rem;">🗑️ Borrar</button>
+
+        <!-- PROGRESS BAR -->
+        ${progressBar}
+
+        <!-- BODY -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--line);">
+
+          <!-- LEFT: Customer info -->
+          <div style="padding:16px 20px;border-right:1px solid var(--line);">
+            <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px;">👤 Cliente</div>
+            <div style="font-weight:800;font-size:1rem;color:var(--secondary);margin-bottom:4px;">${escapeHTML(order.customer?.name || '—')}</div>
+            <div style="font-size:0.85rem;color:var(--muted);margin-bottom:3px;">📍 ${escapeHTML(order.customer?.complex || '')}</div>
+            <div style="font-size:0.85rem;color:var(--muted);margin-bottom:8px;">🏢 Torre ${escapeHTML(order.customer?.tower || '')} · Apto ${escapeHTML(order.customer?.apartment || '')}</div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span style="background:${pm.bg};color:${pm.color};padding:4px 10px;border-radius:999px;font-size:0.78rem;font-weight:700;">${pm.label}</span>
+              ${payConfirmed}
+            </div>
+          </div>
+
+          <!-- RIGHT: Items -->
+          <div style="padding:16px 20px;">
+            <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px;">🍕 Productos</div>
+            ${itemsHtml}
+            ${notesHtml}
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);">
+              <span style="font-size:0.8rem;color:var(--muted);">Subtotal</span>
+              <span style="font-weight:700;font-size:0.9rem;">${money(order.subtotal || order.total)}</span>
+            </div>
+            ${order.deliveryFee ? `<div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:0.8rem;color:var(--muted);">Domicilio</span>
+              <span style="font-weight:700;font-size:0.9rem;">+${money(order.deliveryFee)}</span>
+            </div>` : ''}
+            ${order.discount ? `<div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:0.8rem;color:var(--success);">🎟️ Descuento</span>
+              <span style="font-weight:700;font-size:0.9rem;color:var(--success);">-${money(order.discount)}</span>
+            </div>` : ''}
+          </div>
         </div>
-      </article>`;
+
+        <!-- FOOTER ACTIONS -->
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 20px;
+                    background:var(--bg);border-top:1px solid var(--line);flex-wrap:wrap;">
+          ${nextBtn}
+          <button onclick="deleteOrder('${order.id}')"
+            style="padding:12px 16px;border-radius:14px;border:1.5px solid rgba(220,38,38,0.25);
+                   background:rgba(220,38,38,0.06);color:#dc2626;font-weight:700;
+                   font-size:0.82rem;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.15s;"
+            onmouseover="this.style.background='rgba(220,38,38,0.12)'"
+            onmouseout="this.style.background='rgba(220,38,38,0.06)'">
+            🗑️ Borrar
+          </button>
+        </div>
+
+      </article>
+    `;
   }).join('');
 }
+
+function _timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Justo ahora';
+  if (mins < 60) return `Hace ${mins} min`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `Hace ${hrs}h`;
+  return new Date(dateStr).toLocaleDateString('es-CO', { dateStyle: 'short' });
+}
+
 
 function renderSales() {
   const delivered = getOrders().filter((order) => order.status === 'entregado');
@@ -358,20 +548,24 @@ window.deleteClient = (id) => {
    }
 };
 
+let _renderAllTimeout = null;
 function renderAll() {
   const sessionKey = getSessionKey();
   if (localStorage.getItem(sessionKey) !== 'true') return;
   
-  console.log('🔄 Renderizando panel completo...');
-  renderDashboard();
-  renderOrders();
-  renderInventory();
-  renderSales();
-  renderCustomers();
-  renderSettings();
-  renderAdditionals();
-  renderCashRegister();
-  renderPendingPayments();
+  // Debounce: si se llama varias veces en 150ms, solo ejecuta una vez
+  clearTimeout(_renderAllTimeout);
+  _renderAllTimeout = setTimeout(() => {
+    renderDashboard();
+    scheduleRenderOrders(); // usa debounce interno también
+    renderInventory();
+    renderSales();
+    renderCustomers();
+    renderSettings();
+    renderAdditionals();
+    renderCashRegister();
+    renderPendingPayments();
+  }, 150);
 }
 
 /* ─── INICIALIZACIÓN Y EVENTOS ────────────────────────────────────── */
