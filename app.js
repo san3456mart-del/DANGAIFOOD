@@ -42,7 +42,7 @@ const indicators = Array.from(document.querySelectorAll('.wizard-step'));
 let cart = [];
 let currentStep = 1;
 let previousStep = 2;
-let activeSize = cfg.categories.pizzas ? 'pizzas' : Object.keys(cfg.categories)[0];
+let activeSize = Object.keys(cfg.categories)[0] || 'pizzas';
 let paymentMethod = 'efectivo';
 let paymentReceiptBase64 = null;
 let appliedCouponId = null;  // currently applied coupon ID
@@ -621,8 +621,9 @@ function addToCartFromModal() {
 
   renderCart();
   closePizzaModal();
-  const label = isHalf ? 'Pizza mitad y mitad' : product.name;
-  toastMessage(`${label} ${sizeInfo.shortLabel.toLowerCase()} agregada al pedido. 🍕`);
+  const label = isHalf ? 'Mitad y Mitad' : product.name;
+  const sizeLabel = info.shortLabel || info.label || '';
+  toastMessage(`${label}${sizeLabel ? ' (' + sizeLabel + ')' : ''} agregado al pedido. ✅`);
 }
 
 // Legacy placeholder to avoid reference errors from old code
@@ -823,7 +824,7 @@ async function submitOrder() {
   }
 
   if (!profile) return toastMessage('Por favor completa todos tus datos de entrega 🛵.');
-  if (!cart.length) return toastMessage('Agrega por lo menos una pizza.');
+  if (!cart.length) return toastMessage('Agrega por lo menos un producto al carrito.');
   if (paymentMethod !== 'efectivo' && !paymentReceiptBase64) {
     return toastMessage('Debes subir el comprobante de pago para continuar.');
   }
@@ -937,13 +938,13 @@ if (editProfileBtn) {
 }
 
 goToConfirmBtn.addEventListener('click', () => {
-  if (!cart.length) return toastMessage('Agrega por lo menos una pizza antes de continuar.');
+  if (!cart.length) return toastMessage('Agrega por lo menos un producto antes de continuar.');
   setStep(3);
 });
 
 if (floatingCartGoBtn) {
   floatingCartGoBtn.addEventListener('click', () => {
-    if (!cart.length) return toastMessage('Agrega por lo menos una pizza antes de continuar.');
+    if (!cart.length) return toastMessage('Agrega por lo menos un producto antes de continuar.');
     setStep(3);
   });
 }
@@ -969,7 +970,6 @@ window.addEventListener('storage', () => {
   renderSizeTabs();
   renderMenu();
   renderCart();
-  renderOrdersHistory();
 });
 
 function toBase64(file) {
@@ -1253,6 +1253,7 @@ window.addEventListener('storage', () => {
   renderOrdersHistory();
 });
 
+// Refresh order history every 5 seconds (reduced from 3s to limit Firebase reads)
 setInterval(() => {
   renderOrdersHistory();
-}, 3000);
+}, 5000);
