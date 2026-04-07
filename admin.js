@@ -377,14 +377,15 @@ function renderOrders() {
       const isActive = order.status !== 'entregado';
       const discount = (order.discount || 0) > 0 ? `<span style="color:var(--success);font-weight:700;">-${money(order.discount)}</span>` : '';
 
-      // Items list (Defensivo: (order.items || []))
-      const itemsList = (order.items || []).map(item =>
+      // Items list (Defensivo: Array.isArray)
+      const items = Array.isArray(order.items) ? order.items : [];
+      const itemsList = items.map(item =>
         `<div class="oc-item-row">
           <span class="oc-item-dot" style="background:${sm.color};"></span>
           <span class="oc-item-name">${escapeHTML(item.name || 'Producto')}</span>
           <span class="oc-item-size">${escapeHTML(item.sizeLabel || '')}</span>
-          ${item.removed?.length ? `<span class="oc-item-removed">sin ${escapeHTML(item.removed.join(', '))}</span>` : ''}
-          ${(item.extras || []).length ? `<div class="oc-item-extras">${item.extras.map(e => `<span>+ ${escapeHTML(e.name)}${e.qty > 1 ? ` (x${e.qty})` : ''}</span>`).join('')}</div>` : ''}
+          ${Array.isArray(item.removed) ? `<span class="oc-item-removed">sin ${escapeHTML(item.removed.join(', '))}</span>` : ''}
+          ${Array.isArray(item.extras) && item.extras.length ? `<div class="oc-item-extras">${item.extras.map(e => `<span>+ ${escapeHTML(e.name)}${e.qty > 1 ? ` (x${e.qty})` : ''}</span>`).join('')}</div>` : ''}
           <span class="oc-item-price">${money(item.price || 0)}</span>
         </div>`
       ).join('');
@@ -952,8 +953,11 @@ if (ordersSearchInput) {
 
 window.addEventListener('storage', renderAll);
 setInterval(() => {
-  if (localStorage.getItem(storage.adminSession) === 'true') renderAll();
-}, 2500);
+  if (localStorage.getItem(storage.adminSession) === 'true') {
+    // Solo re-renderizar si no hay un modal abierto o scroll activo intenso
+    renderAll();
+  }
+}, 5000); // Aumentado a 5s para mayor estabilidad de sincronización
 
 /* ─── COUPON SYSTEM LOGIC ─────────────────────────────────────── */
 const couponModal = document.getElementById('couponModalOverlay');
