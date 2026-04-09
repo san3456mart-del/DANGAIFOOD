@@ -179,18 +179,6 @@ function maybePlaySound(newestOrderId) {
   localStorage.setItem(storage.lastOrderSound, newestOrderId);
 }
 
-function setStatus(orderId, status) {
-  const orders = getOrders().map((order) => order.id === orderId ? { ...order, status } : order);
-  saveOrders(orders);
-  if (window.FirebaseDB) {
-    const cleanId = String(orderId).replace(/[\.\$#\[\]\/]/g, '_');
-    window.FirebaseDB.update(storage.orders + '/' + cleanId, { status })
-      .catch(err => console.error('Error en actualización granular:', err));
-  }
-  renderAll();
-  showToast(`Pedido ${orderId} actualizado.`);
-}
-
 window.confirmPayment = (orderId) => {
   const orders = getOrders();
   const idx = orders.findIndex(o => o.id === orderId);
@@ -198,29 +186,85 @@ window.confirmPayment = (orderId) => {
     orders[idx].paymentConfirmed = true;
     localStorage.setItem(storage.orders, JSON.stringify(orders));
     if (window.FirebaseDB) {
-      const cleanId = String(orderId).replace(/[\.\$#\[\]\/]/g, '_');
+      const cleanId = String(orderId).replace(/[.$#[\]\/]/g, '_');
       window.FirebaseDB.update(`${storage.orders}/${cleanId}`, { paymentConfirmed: true })
         .catch(err => console.error('Fallo sync pago:', err));
     }
-    renderAll();
+    scheduleRenderOrders();
+    renderDashboard();
     showToast('✅ Pago validado.');
   }
 };
 
 function deleteOrder(orderId) {
-  if (!confirm(`¿Estás seguro de eliminar permanentemente el pedido ${orderId}?`)) return;
-  const orders = getOrders().filter(o => String(o.id) !== String(orderId));
-  localStorage.setItem(storage.orders, JSON.stringify(orders));
+  if (!confirm(`¿Eliminar el pedido ${orderId}? Esta acción no se puede deshacer.`)) return;
+
+  const filtered = getOrders().filter(o => String(o.id) !== String(orderId));
+
+  // 1. Actualizar localStorage inmediatamente (UI reactiva)
+  localStorage.setItem(storage.orders, JSON.stringify(filtered));
+  scheduleRenderOrders();
+  renderDashboard();
+  showToast('🗑️ Pedido eliminado.');
+
   if (window.FirebaseDB) {
-    const cleanId = String(orderId).replace(/[\.\$#\[\]\/]/g, '_');
-    window.FirebaseDB.save(`${storage.orders}/${cleanId}`, null)
-      .then(() => { showToast(`🗑️ Eliminado.`); renderAll(); })
-      .catch(err => console.error(err));
-  } else {
-    renderAll();
-    showToast(`Eliminado localmente.`);
+    // 2. Convertir array a objeto indexado por ID para Firebase
+    //    Esto reemplaza TODO el nodo (borra índices numéricos viejos y claves PED-xxx)
+    //    Garantiza que solo queden los pedidos actuales, sin fantasmas.
+    const ordersAsObject = {};
+    filtered.forEach(o => {
+      const key = String(o.id).replace(/[.$#[\]\/]/g, '_');
+      ordersAsObject[key] = o;
+    });
+
+    // set() reemplaza COMPLETAMENTE el nodo — esto es intencional aquí
+    window.FirebaseDB.save(storage.orders, ordersAsObject)
+      .catch(err => {
+        console.error('Error sincronizando eliminación con Firebase:', err);
+        showToast('⚠️ Eliminado localmente, pero falló sincronización en nube.');
+      });
   }
 }
+
+/**
+ * Limpia los datos fantasma de Firebase:
+ * convierte la estructura mixta (array+indices numericos) a solo objeto indexado por ID.
+ * Ejecutar una sola vez para sanar la base de datos existente.
+ */
+window.repairFirebaseOrders = async () => {
+  if (!window.FirebaseDB) return showToast('⚠️ Firebase no disponible.');
+  showToast('🔄 Reparando pedidos en Firebase...');
+  try {
+    const raw = await window.FirebaseDB.readOnce(storage.orders);
+    if (!raw) { showToast('✅ Sin datos que reparar.'); return; }
+
+    let arr = Array.isArray(raw) ? raw : Object.values(raw);
+    // Deduplicar por ID
+    const seen = new Set();
+    arr = arr.filter(o => {
+      if (!o || !o.id) return false;
+      if (seen.has(String(o.id))) return false;
+      seen.add(String(o.id));
+      return true;
+    }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    // Guardar como objeto indexado por ID
+    const obj = {};
+    arr.forEach(o => {
+      const key = String(o.id).replace(/[.$#[\]\/]/g, '_');
+      obj[key] = o;
+    });
+
+    await window.FirebaseDB.save(storage.orders, obj);
+    localStorage.setItem(storage.orders, JSON.stringify(arr));
+    scheduleRenderOrders();
+    renderDashboard();
+    showToast(`✅ Reparados ${arr.length} pedidos sin duplicados.`);
+  } catch (err) {
+    console.error('Error reparando Firebase:', err);
+    showToast('❌ Error al reparar. Ver consola.');
+  }
+};
 
 // ─── debounce render para evitar re-renders duplicados de Firebase ───
 let _renderOrdersTimeout = null;
@@ -406,7 +450,10 @@ function renderOrders() {
             <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px;">👤 Cliente</div>
             <div style="font-weight:800;font-size:1rem;color:var(--secondary);margin-bottom:4px;">${escapeHTML(order.customer?.name || '—')}</div>
             <div style="font-size:0.85rem;color:var(--muted);margin-bottom:3px;">📍 ${escapeHTML(order.customer?.complex || '')}</div>
-            <div style="font-size:0.85rem;color:var(--muted);margin-bottom:8px;">🏢 Torre ${escapeHTML(order.customer?.tower || '')} · Apto ${escapeHTML(order.customer?.apartment || '')}</div>
+            <div style="font-size:0.85rem;color:var(--muted);margin-bottom:6px;">🏢 Torre ${escapeHTML(order.customer?.tower || '')} · Apto ${escapeHTML(order.customer?.apartment || '')}</div>
+            ${order.customer?.phone ? `<a href="https://wa.me/57${String(order.customer.phone).replace(/\D/g,'')}"
+              target="_blank"
+              style="display:inline-flex;align-items:center;gap:6px;background:#25d366;color:#fff;padding:5px 12px;border-radius:999px;font-size:0.8rem;font-weight:700;text-decoration:none;margin-bottom:8px;">💬 ${escapeHTML(order.customer.phone)}</a>` : ''}
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
               <span style="background:${pm.bg};color:${pm.color};padding:4px 10px;border-radius:999px;font-size:0.78rem;font-weight:700;">${pm.label}</span>
               ${payConfirmed}
@@ -467,14 +514,20 @@ function _timeAgo(dateStr) {
 function renderSales() {
   const delivered = getOrders().filter((order) => order.status === 'entregado');
   if (!salesTableBody) return;
-  salesTableBody.innerHTML = delivered.map((order) => `
-    <tr>
-      <td>${escapeHTML(order.id)}</td>
-      <td>${escapeHTML(order.customer?.name)}</td>
+  salesTableBody.innerHTML = delivered.map((order) => {
+    const pm = PAY_META[order.paymentMethod] || { label: order.paymentMethod || '—', color: '#6b7280', bg: '#f3f4f6' };
+    const cost = Number(order.cost || 0);
+    const profit = Number(order.total || 0) - cost;
+    return `<tr>
+      <td><strong>${escapeHTML(order.id)}</strong></td>
+      <td>${escapeHTML(order.customer?.name || '—')}</td>
+      <td><span style="background:${pm.bg};color:${pm.color};padding:2px 8px;border-radius:999px;font-size:0.75rem;font-weight:700;">${pm.label}</span></td>
       <td>${formatDate(order.createdAt)}</td>
-      <td>${money(order.total)}</td>
-    </tr>
-  `).join('') || '<tr><td colspan="4">No hay ventas registradas.</td></tr>';
+      <td><strong>${money(order.total)}</strong></td>
+      <td style="color:var(--muted);">${cost > 0 ? money(cost) : '—'}</td>
+      <td style="color:${profit >= 0 ? 'var(--success)' : 'var(--danger)'}; font-weight:700;">${cost > 0 ? money(profit) : '—'}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted);">No hay ventas registradas.</td></tr>';
 }
 
 function renderInventory() {
@@ -530,14 +583,18 @@ function renderCustomers() {
   const users = getJson(storage.users, []);
   if (!customersTableBody) return;
   customersCount.textContent = `${users.length} clientes`;
-  customersTableBody.innerHTML = users.map(user => `
-    <tr>
-      <td>${escapeHTML(user.name)}</td>
-      <td>${escapeHTML(user.phone)}</td>
-      <td>${escapeHTML(user.complex)}, T${escapeHTML(user.tower)}, A${escapeHTML(user.apartment)}</td>
-      <td><button onclick="deleteClient('${user.clientId}')" class="mini-btn danger">Borrar</button></td>
-    </tr>
-  `).join('') || '<tr><td colspan="4" style="text-align:center;">Sin clientes registrados.</td></tr>';
+  customersTableBody.innerHTML = users.map(user => {
+    const phone = user.phone || user.whatsapp || '—';
+    const waUrl = `https://wa.me/57${String(phone).replace(/\D/g, '')}`;
+    return `<tr>
+      <td><strong>${escapeHTML(user.name || '—')}</strong></td>
+      <td><a href="${waUrl}" target="_blank" style="color:var(--primary);font-weight:700;text-decoration:none;">📱 ${escapeHTML(phone)}</a></td>
+      <td>${escapeHTML(user.complex || '—')}</td>
+      <td>T${escapeHTML(user.tower || '—')} · Apto ${escapeHTML(user.apartment || '—')}</td>
+      <td style="text-align:center;"><button onclick="window.openCouponModal('${user.clientId}')" class="mini-btn" title="Enviar cupón">🎟️</button>
+          <button onclick="deleteClient('${user.clientId}')" class="mini-btn danger">Borrar</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted);">Sin clientes registrados.</td></tr>';
 }
 
 window.deleteClient = (id) => {
@@ -745,7 +802,7 @@ const cashHistoryList = document.getElementById('cashHistoryList');
 const expenseForm = document.getElementById('expenseForm');
 const expenseDesc = document.getElementById('expenseDesc');
 const expenseAmt = document.getElementById('expenseAmt');
-const expenseCat = document.getElementById('expenseCategory');
+const expenseCat = document.getElementById('expenseCat');
 const expensesList = document.getElementById('expensesList');
 
 function renderCashRegister() {
@@ -758,7 +815,14 @@ function renderCashRegister() {
 function _renderDaySummary(date) {
   if (!cashSummaryBox) return;
   const orders = getOrders();
-  const dayOrders = orders.filter(o => o.status === 'entregado' && o.createdAt.startsWith(date));
+  // Filtrar por fecha en zona horaria de Colombia (UTC-5)
+  const dayOrders = orders.filter(o => {
+    if (o.status !== 'entregado') return false;
+    const localDate = new Date(o.createdAt);
+    localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
+    const orderDate = localDate.toISOString().split('T')[0];
+    return orderDate === date;
+  });
   
   const totalSales   = dayOrders.reduce((s, o) => s + Number(o.total || 0), 0);
   const cashSales    = dayOrders.filter(o => o.paymentMethod === 'efectivo').reduce((s, o) => s + Number(o.total || 0), 0);
