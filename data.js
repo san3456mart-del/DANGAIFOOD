@@ -296,7 +296,7 @@
 
   window.RestaurantAppConfig = {
     restaurantName: 'Dangai Food',
-    whatsappNumber: '573506876430',
+    whatsappNumber: '573018116410',
     deliveryFee: 0,
     categories,
     pizzaSizes,

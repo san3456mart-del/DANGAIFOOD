@@ -46,6 +46,7 @@ let activeSize = Object.keys(cfg.categories)[0] || 'pizzas';
 let paymentMethod = 'efectivo';
 let paymentReceiptBase64 = null;
 let appliedCouponId = null;  // currently applied coupon ID
+let _pendingWaUrl = null;    // URL de WhatsApp pendiente (para el modal de comprobante)
 
 const money = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(n || 0));
 const getJson = (key, fallback) => {
@@ -754,25 +755,35 @@ function renderCoupons() {
   });
 }
 
-// Mensaje que manda el ADMIN al restaurante (notificación interna)
+// Mensaje que envía el PEDIDO al restaurante por WhatsApp
 function buildWhatsappMessage(order) {
   const itemLines = order.items.map((item, index) => {
     let line = `${index + 1}. ${item.name} - ${item.sizeLabel}`;
-    if (item.removed && item.removed.length) line += ` - Sin ${item.removed.join(', ')}`;
-    if (item.extras && item.extras.length) line += ` - Extras: ${item.extras.map(e => `${e.qty}x ${e.name}`).join(', ')}`;
+    if (item.removed && item.removed.length) line += ` (Sin ${item.removed.join(', ')})`;
+    if (item.extras && item.extras.length) line += ` + Extras: ${item.extras.map(e => `${e.qty}x ${e.name}`).join(', ')}`;
     line += ` - ${money(item.price)}`;
     return line;
   });
+  const payLabel = order.paymentMethod === 'efectivo'
+    ? '💵 Efectivo'
+    : order.paymentMethod === 'qr'
+      ? '📱 App/QR (comprobante enviado por WhatsApp)'
+      : '🔑 Nequi/Bre-B (comprobante enviado por WhatsApp)';
   return [
-    `Hola, llegó un nuevo pedido para ${cfg.restaurantName}.`,
-    `Pedido: ${order.id}`,
-    `Cliente: ${order.customer.name}`,
-    `Ubicación: ${order.customer.complex}, ${order.customer.tower}, apto ${order.customer.apartment}`,
-    `Método de Pago: ${order.paymentMethod === 'efectivo' ? '💵 Efectivo' : (order.paymentMethod === 'qr' ? '📱 App/QR (Comprobante adjunto en el Admin Panel)' : '🔑 Bre-B (Comprobante adjunto en el Admin Panel)')}`,
-    'Productos:',
+    `🍕 *NUEVO PEDIDO — ${cfg.restaurantName}*`,
+    ``,
+    `🔖 *Número:* ${order.id}`,
+    `👤 *Cliente:* ${order.customer.name}`,
+    `📞 *Celular:* ${order.customer.phone}`,
+    `📍 *Ubicación:* ${order.customer.complex}, Torre ${order.customer.tower}, Apto ${order.customer.apartment}`,
+    `💳 *Pago:* ${payLabel}`,
+    ``,
+    `📦 *Productos:*`,
     ...itemLines,
-    `Notas: ${order.notes || 'Sin notas'}`,
-    `Total: ${money(order.total)}`
+    ``,
+    `📝 *Notas:* ${order.notes || 'Sin notas'}`,
+    ``,
+    `💰 *Total a cobrar: ${money(order.total)}*`
   ].join('\n');
 }
 
@@ -862,15 +873,19 @@ async function submitOrder() {
     const orders = getJson(storage.orders, []); // get current local orders
     orders.unshift(order);
     
-    // Guardar imagen pesada: si falla localStorage, se guardará igual en Firebase
-    await setJson(storage.orders, orders);
+    // Guardar en localStorage (best effort — puede fallar si está lleno)
+    try {
+      localStorage.setItem(storage.orders, JSON.stringify(orders));
+    } catch(e) {
+      console.warn('localStorage lleno, solo guardando en Firebase.');
+    }
 
-    // ACTUALIZACIÓN GRANULAR en Firebase: Sólo insertamos este nuevo pedido
-    // Esto evita pisar los pedidos que hayan llegado en otros dispositivos.
+    // GUARDAR EN FIREBASE como objeto indexado por ID (NO como array)
+    // Esto es compatible con el formato que usa deleteOrder en admin.js
     if (window.FirebaseDB) {
-      const cleanId = String(order.id).replace(/[\.\$#\[\]\/]/g, '_');
+      const cleanId = String(order.id).replace(/[.$#[\]\/]/g, '_');
       window.FirebaseDB.update(storage.orders + '/' + cleanId, order)
-        .catch(err => console.error('Error enviando pedido granular:', err));
+        .catch(err => console.error('Error enviando pedido a Firebase:', err));
     }
 
     const updatedProducts = products.map((product) => {
@@ -906,15 +921,67 @@ async function submitOrder() {
     
     renderCart();
     renderMenu();
+
+    // Enviar pedido directamente por WhatsApp al restaurante
+    const waMsg = encodeURIComponent(buildWhatsappMessage(order));
+    const waUrl = `https://wa.me/${cfg.whatsappNumber}?text=${waMsg}`;
+    _pendingWaUrl = waUrl;
+
+    if (order.paymentMethod !== 'efectivo' && order.receiptBase64) {
+      // Pago digital: abrir WA con el texto Y mostrar modal con comprobante
+      window.open(waUrl, '_blank');
+      showReceiptModal(order.receiptBase64, waUrl);
+    } else {
+      // Efectivo: solo abrir WA
+      window.open(waUrl, '_blank');
+    }
+
     previousStep = 2;
-    setStep(4);
-    toastMessage(`Pedido ${order.id} guardado. Puedes seguir su estado aquí.`);
+    setStep(2);
+    toastMessage(`✅ Pedido ${order.id} enviado. ¡Redirigiendo a WhatsApp!`);
   } catch (err) {
-    toastMessage('Hubo un error al guardar el pedido. Intenta nuevamente.');
+    toastMessage('Hubo un error al enviar el pedido. Intenta nuevamente.');
   } finally {
     submitOrderBtn.disabled = false;
     submitOrderBtn.textContent = 'Enviar pedido';
   }
+}
+
+// ─── MODAL COMPROBANTE DE PAGO ──────────────────────────────────────
+function showReceiptModal(receiptBase64, waUrl) {
+  const overlay = document.getElementById('receiptModalOverlay');
+  const previewBox = document.getElementById('receiptPreviewBox');
+  const previewImg = document.getElementById('receiptPreviewImg');
+  const waBtn = document.getElementById('receiptModalWaBtn');
+  const closeBtn = document.getElementById('receiptModalCloseBtn');
+
+  if (!overlay) return;
+
+  if (receiptBase64) {
+    previewImg.src = receiptBase64;
+    previewBox.style.display = 'flex';
+  } else {
+    previewBox.style.display = 'none';
+  }
+
+  waBtn.onclick = () => {
+    window.open(waUrl, '_blank');
+  };
+
+  closeBtn.onclick = () => {
+    overlay.classList.add('hidden');
+    document.body.style.overflow = '';
+  };
+
+  overlay.onclick = (e) => {
+    if (e.target === overlay) {
+      overlay.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+  };
+
+  overlay.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
 }
 
 // ─── GUEST FORM LOGIC ─────────────────────────────────────────────
