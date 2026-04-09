@@ -304,6 +304,35 @@ const PAY_META = {
   breb:     { label: '🔑 Bre-B',    color: '#1d4ed8', bg: '#dbeafe' },
 };
 
+// ─── COUNTDOWN (igual al cliente: 45 min) ────────────────────────
+const ADMIN_ORDER_LIMIT_MS = 45 * 60 * 1000;
+
+function getAdminCountdown(createdAt) {
+  const elapsed = Date.now() - new Date(createdAt).getTime();
+  const remaining = ADMIN_ORDER_LIMIT_MS - elapsed;
+  if (remaining <= 0) return { text: '¡Tiempo superado!', urgent: true, exceeded: true };
+  const mins = Math.floor(remaining / 60000);
+  const secs = Math.floor((remaining % 60000) / 1000);
+  const pad = n => String(n).padStart(2, '0');
+  return { text: `${pad(mins)}:${pad(secs)}`, urgent: mins < 5, exceeded: false };
+}
+
+// Ticker: actualiza todos los countdowns del admin cada segundo
+setInterval(() => {
+  document.querySelectorAll('.admin-order-countdown[data-created]').forEach(el => {
+    const data = getAdminCountdown(el.dataset.created);
+    el.textContent = data.text;
+    const color = data.exceeded ? '#dc2626' : data.urgent ? '#f59e0b' : '#059669';
+    el.style.color = color;
+    el.style.borderColor = color;
+    const wrap = el.closest('.admin-countdown-wrap');
+    if (wrap) {
+      wrap.style.borderColor = color;
+      wrap.style.background = data.exceeded ? '#fef2f2' : data.urgent ? '#fffbeb' : '#f0fdf4';
+    }
+  });
+}, 1000);
+
 function renderOrders() {
   if (!ordersList) return;
   const allOrders = getOrders();
@@ -437,6 +466,21 @@ function renderOrders() {
             </span>
             <strong style="font-size:1.3rem;font-weight:800;color:var(--secondary);">${money(order.total)}</strong>
           </div>
+          ${!isDelivered ? (() => {
+            const cd = getAdminCountdown(order.createdAt);
+            const cdColor = cd.exceeded ? '#dc2626' : cd.urgent ? '#f59e0b' : '#059669';
+            const cdBg    = cd.exceeded ? '#fef2f2' : cd.urgent ? '#fffbeb' : '#f0fdf4';
+            return `<div class="admin-countdown-wrap" style="display:inline-flex;align-items:center;gap:7px;
+                    background:${cdBg};border:2px solid ${cdColor};border-radius:12px;padding:5px 13px;
+                    transition:background .3s,border-color .3s;">
+              <span style="font-size:1rem;">⏱️</span>
+              <div style="text-align:center;line-height:1.1;">
+                <div style="font-size:0.6rem;font-weight:800;color:${cdColor};text-transform:uppercase;letter-spacing:.06em;">Tiempo restante</div>
+                <span class="admin-order-countdown" data-created="${order.createdAt}"
+                  style="font-size:1.05rem;font-weight:800;color:${cdColor};font-variant-numeric:tabular-nums;">${cd.text}</span>
+              </div>
+            </div>`;
+          })() : ''}
         </div>
 
         <!-- PROGRESS BAR -->
