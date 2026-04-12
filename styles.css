@@ -1271,3 +1271,11 @@ th { color: var(--muted); font-size: .85rem; text-transform: uppercase; letter-s
   border-radius: 6px;
   width: fit-content;
 }
+
+/* ── Ver Menú PDF button ── */
+#viewMenuPdfBtn:hover {
+  background: rgba(255,69,0,0.12) !important;
+  border-color: var(--primary) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(255,69,0,0.15);
+}

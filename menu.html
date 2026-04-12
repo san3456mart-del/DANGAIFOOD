@@ -1,0 +1,848 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Menú Dangai Food | Ver todos nuestros productos</title>
+  <meta name="description" content="Explora el menú completo de Dangai Food: pizzas, perros, hamburguesas, salchipapas y más. Consulta precios y productos disponibles." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍕</text></svg>">
+
+  <style>
+    :root {
+      --primary: #ff4500;
+      --secondary: #111827;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --bg: #f5f6f8;
+      --card: #ffffff;
+      --success: #10b981;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .topbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .topbar-brand img {
+      height: 40px;
+      width: auto;
+      border-radius: 8px;
+      object-fit: contain;
+    }
+
+    .topbar-brand-text h1 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--secondary);
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    .topbar-brand-text span {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .topbar-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border-radius: 12px;
+      border: 1.5px solid var(--line);
+      background: #fff;
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-back:hover {
+      background: var(--bg);
+      color: var(--secondary);
+      border-color: #9ca3af;
+    }
+
+    .btn-pdf {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 20px;
+      border-radius: 12px;
+      border: none;
+      background: var(--primary);
+      color: #fff;
+      font-size: 0.92rem;
+      font-weight: 800;
+      cursor: pointer;
+      font-family: inherit;
+      box-shadow: 0 4px 14px rgba(255,69,0,0.3);
+      transition: all 0.2s;
+    }
+
+    .btn-pdf:hover {
+      background: #e03d00;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(255,69,0,0.4);
+    }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(135deg, #111827 0%, #1f2937 50%, #374151 100%);
+      padding: 40px 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 20% 50%, rgba(255,69,0,0.15) 0%, transparent 60%),
+                  radial-gradient(circle at 80% 50%, rgba(255,120,60,0.1) 0%, transparent 60%);
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,69,0,0.2);
+      border: 1px solid rgba(255,69,0,0.4);
+      color: #ff7a4d;
+      padding: 5px 14px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 16px;
+    }
+
+    .hero h2 {
+      font-size: 2rem;
+      font-weight: 900;
+      color: #fff;
+      margin-bottom: 10px;
+      letter-spacing: -0.03em;
+    }
+
+    .hero p {
+      color: rgba(255,255,255,0.65);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    /* ── CONTENT WRAPPER ── */
+    .page-content {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 20px 60px;
+    }
+
+    /* ── NAV TABS (Sticky Category Filter) ── */
+    .cat-nav-wrap {
+      position: sticky;
+      top: 73px;
+      z-index: 90;
+      background: var(--bg);
+      padding: 12px 0;
+      margin-bottom: 8px;
+    }
+
+    .cat-nav {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+
+    .cat-nav::-webkit-scrollbar { display: none; }
+
+    .cat-btn {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 18px;
+      border-radius: 999px;
+      border: 1.5px solid var(--line);
+      background: #fff;
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .cat-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .cat-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(255,69,0,0.25);
+    }
+
+    /* ── CATEGORY SECTION ── */
+    .cat-section {
+      margin-bottom: 48px;
+      scroll-margin-top: 145px;
+    }
+
+    .cat-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--line);
+    }
+
+    .cat-icon-wrap {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(255,69,0,0.12), rgba(255,120,60,0.08));
+      border: 1px solid rgba(255,69,0,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      flex-shrink: 0;
+    }
+
+    .cat-header-text h2 {
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: var(--secondary);
+      margin: 0;
+      letter-spacing: -0.02em;
+    }
+
+    .cat-header-text span {
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* ── PRODUCT GRID ── */
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 14px;
+    }
+
+    /* Pizza has 3 size rows, needs more space */
+    .product-grid.pizza-grid {
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    }
+
+    /* ── PRODUCT CARD ── */
+    .product-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .product-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+
+    .product-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .product-emoji {
+      width: 64px;
+      height: 64px;
+      min-width: 64px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #fff8f5, #fff4f0);
+      border: 1px solid rgba(255,69,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.9rem;
+    }
+
+    .product-info {
+      flex: 1;
+    }
+
+    .product-info h3 {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--secondary);
+      margin: 0 0 4px;
+      line-height: 1.3;
+    }
+
+    .product-ingredients {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Single price */
+    .product-price-single {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    /* Multi price (pizza sizes) */
+    .product-prices {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .price-pill {
+      background: #f9fafb;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 8px 10px;
+      text-align: center;
+    }
+
+    .price-pill-label {
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+
+    .price-pill-value {
+      display: block;
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .price-pill-sub {
+      display: block;
+      font-size: 0.62rem;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+
+    /* ── LEGEND / INFO BANNER ── */
+    .info-banner {
+      background: linear-gradient(135deg, rgba(255,69,0,0.06), rgba(255,120,60,0.03));
+      border: 1px solid rgba(255,69,0,0.15);
+      border-radius: 16px;
+      padding: 16px 20px;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .info-banner-icon {
+      font-size: 2rem;
+      flex-shrink: 0;
+    }
+
+    .info-banner p {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .info-banner strong {
+      color: var(--text);
+    }
+
+    /* ── FOOTER PDF NOTE ── */
+    .pdf-note {
+      text-align: center;
+      padding: 24px;
+      color: var(--muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--line);
+      margin-top: 40px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       PRINT / PDF STYLES
+    ═══════════════════════════════════════════════ */
+    @media print {
+      @page {
+        margin: 15mm 12mm;
+        size: A4;
+      }
+
+      body {
+        background: #fff;
+        color: #000;
+        font-size: 10pt;
+      }
+
+      .topbar,
+      .btn-pdf,
+      .btn-back,
+      .cat-nav-wrap,
+      .topbar-actions,
+      .pdf-note,
+      .hero p,
+      .info-banner {
+        display: none !important;
+      }
+
+      .hero {
+        background: #111827 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        padding: 20mm 12mm 14mm;
+        text-align: center;
+        page-break-after: avoid;
+      }
+
+      .hero-badge {
+        background: rgba(255,69,0,0.2) !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color: #ff7a4d !important;
+      }
+
+      .hero h2 {
+        font-size: 22pt;
+        color: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .page-content {
+        padding: 10mm 0;
+      }
+
+      .cat-section {
+        page-break-inside: avoid;
+        margin-bottom: 14mm;
+      }
+
+      .cat-header {
+        page-break-after: avoid;
+      }
+
+      .product-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6pt;
+      }
+
+      .product-grid.pizza-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .product-card {
+        padding: 10pt;
+        gap: 7pt;
+        page-break-inside: avoid;
+        border: 1px solid #e5e7eb;
+        border-radius: 10pt;
+        box-shadow: none !important;
+        transform: none !important;
+      }
+
+      .product-card:hover {
+        transform: none !important;
+        box-shadow: none !important;
+      }
+
+      .product-emoji {
+        width: 44pt;
+        height: 44pt;
+        min-width: 44pt;
+        font-size: 1.4rem;
+        border-radius: 8pt;
+        background: #fff9f7 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .product-info h3 {
+        font-size: 9pt;
+      }
+
+      .product-ingredients {
+        font-size: 7.5pt;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+      }
+
+      .product-price-single {
+        font-size: 11pt;
+        color: #ff4500 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .price-pill {
+        padding: 4pt 6pt;
+        border: 1px solid #e5e7eb;
+        background: #f9fafb !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .price-pill-label {
+        font-size: 6pt;
+      }
+
+      .price-pill-value {
+        font-size: 8.5pt;
+        color: #ff4500 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .price-pill-sub {
+        font-size: 5.5pt;
+      }
+
+      .cat-icon-wrap {
+        width: 36pt;
+        height: 36pt;
+        min-width: 36pt;
+        font-size: 1.2rem;
+        background: #fff9f7 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .cat-header-text h2 {
+        font-size: 13pt;
+      }
+
+      .cat-header {
+        border-bottom: 1.5pt solid #e5e7eb;
+        padding-bottom: 8pt;
+        margin-bottom: 10pt;
+      }
+
+      .topbar-brand {
+        display: flex !important;
+      }
+
+      .topbar {
+        display: none !important;
+      }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      .hero h2 { font-size: 1.5rem; }
+      .topbar-brand-text span { display: none; }
+      .btn-pdf span { display: none; }
+      .product-grid { grid-template-columns: 1fr; }
+      .product-grid.pizza-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      <img src="public/DANGAI.jpg" alt="Dangai Food" />
+      <div class="topbar-brand-text">
+        <h1>Dangai Food</h1>
+        <span>Menú completo de productos</span>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <a href="index.html" class="btn-back" id="btnBackToStore">
+        ← Volver
+      </a>
+      <button class="btn-pdf" id="btnDownloadPdf" onclick="window.print()">
+        📄 <span>Descargar PDF</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-content">
+      <div class="hero-badge">🍕 Menú oficial</div>
+      <h2>Nuestro Menú Completo</h2>
+      <p>Explora todas nuestras categorías y precios. ¡Pide cuando quieras!</p>
+    </div>
+  </div>
+
+  <!-- PAGE CONTENT -->
+  <div class="page-content">
+
+    <!-- Category Nav -->
+    <div class="cat-nav-wrap">
+      <div class="cat-nav" id="catNav">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+
+    <!-- Info Banner -->
+    <div class="info-banner">
+      <div class="info-banner-icon">ℹ️</div>
+      <p>
+        <strong>Solo para consulta.</strong> Esta es la vista del menú para que puedas explorar nuestros productos.
+        Cuando estés listo para pedir, haz clic en <strong>"Volver"</strong> y ¡listo! 🚀
+        También puedes <strong>guardar esta página como PDF</strong> con el botón de arriba.
+      </p>
+    </div>
+
+    <!-- Menu Sections -->
+    <div id="menuSections">
+      <!-- Filled by JS -->
+    </div>
+
+    <div class="pdf-note">
+      <p>📍 Pedidos por WhatsApp · Dangai Food © 2026 · Todos los precios en COP</p>
+    </div>
+
+  </div>
+
+  <!-- DATA -->
+  <script src="data.js?v=18"></script>
+
+  <script>
+    (function () {
+      const cfg = window.RestaurantAppConfig;
+      const products = cfg.defaultProducts;
+      const categories = cfg.categories;
+      const pizzaSizes = cfg.pizzaSizes;
+
+      const CATEGORY_EMOJIS = {
+        pizzas: '🍕',
+        perros: '🌭',
+        hamburguesas: '🍔',
+        desgranados: '🌽',
+        sandwich: '🥪',
+        salchipapas: '🍟',
+        salvajadas: '🌋',
+        asado: '🍖',
+        infantil: '🎁',
+        bebidas: '🥤'
+      };
+
+      const PIZZA_SIZE_INFO = {
+        pizzas_personal: { short: 'Personal', sub: '27 cm' },
+        pizzas_small:    { short: 'Small',    sub: '35 cm' },
+        pizzas_medium:   { short: 'Medium',   sub: '40 cm' }
+      };
+
+      function formatCOP(n) {
+        return '$' + Number(n).toLocaleString('es-CO');
+      }
+
+      // Group products by category
+      const grouped = {};
+      for (const prod of products) {
+        if (!grouped[prod.category]) grouped[prod.category] = [];
+        grouped[prod.category].push(prod);
+      }
+
+      const catOrder = Object.keys(categories);
+
+      // Build category nav
+      const catNav = document.getElementById('catNav');
+      const allBtn = document.createElement('button');
+      allBtn.className = 'cat-btn active';
+      allBtn.textContent = '🍽️ Todo';
+      allBtn.id = 'cat-all';
+      allBtn.addEventListener('click', () => {
+        scrollToTop();
+        setActiveNav('all');
+      });
+      catNav.appendChild(allBtn);
+
+      for (const catKey of catOrder) {
+        if (!grouped[catKey]) continue;
+        const info = categories[catKey];
+        const btn = document.createElement('button');
+        btn.className = 'cat-btn';
+        btn.id = `cat-nav-${catKey}`;
+        btn.textContent = (CATEGORY_EMOJIS[catKey] || '') + ' ' + info.label;
+        btn.addEventListener('click', () => {
+          const section = document.getElementById(`sec-${catKey}`);
+          if (section) section.scrollIntoView({ behavior: 'smooth' });
+          setActiveNav(catKey);
+        });
+        catNav.appendChild(btn);
+      }
+
+      function setActiveNav(key) {
+        document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+        const target = key === 'all' ? document.getElementById('cat-all') : document.getElementById(`cat-nav-${key}`);
+        if (target) target.classList.add('active');
+      }
+
+      function scrollToTop() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      // Build sections
+      const menuSections = document.getElementById('menuSections');
+
+      for (const catKey of catOrder) {
+        const items = grouped[catKey];
+        if (!items || items.length === 0) continue;
+
+        const catInfo = categories[catKey];
+        const isPizza = catKey === 'pizzas';
+
+        const section = document.createElement('section');
+        section.className = 'cat-section';
+        section.id = `sec-${catKey}`;
+
+        // Header
+        const header = document.createElement('div');
+        header.className = 'cat-header';
+        header.innerHTML = `
+          <div class="cat-icon-wrap">${CATEGORY_EMOJIS[catKey] || '🍽️'}</div>
+          <div class="cat-header-text">
+            <span>${catInfo.subtitle || items.length + ' productos'}</span>
+            <h2>${catInfo.label}</h2>
+          </div>
+        `;
+        section.appendChild(header);
+
+        // Grid
+        const grid = document.createElement('div');
+        grid.className = isPizza ? 'product-grid pizza-grid' : 'product-grid';
+
+        for (const prod of items) {
+          const card = document.createElement('div');
+          card.className = 'product-card';
+
+          // Determine prices
+          let priceHTML = '';
+          const priceKeys = Object.keys(prod.prices);
+
+          if (isPizza) {
+            // Pizza: show 3 size pills
+            const pills = priceKeys.map(k => {
+              const sizeInfo = PIZZA_SIZE_INFO[k] || { short: k, sub: '' };
+              return `
+                <div class="price-pill">
+                  <span class="price-pill-label">${sizeInfo.short}</span>
+                  <span class="price-pill-value">${formatCOP(prod.prices[k])}</span>
+                  <span class="price-pill-sub">${sizeInfo.sub}</span>
+                </div>
+              `;
+            }).join('');
+            priceHTML = `<div class="product-prices">${pills}</div>`;
+          } else {
+            const price = prod.prices[priceKeys[0]];
+            priceHTML = `<div class="product-price-single">${formatCOP(price)}</div>`;
+          }
+
+          card.innerHTML = `
+            <div class="product-top">
+              <div class="product-emoji">${CATEGORY_EMOJIS[catKey] || '🍽️'}</div>
+              <div class="product-info">
+                <h3>${prod.name}</h3>
+                <p class="product-ingredients">${prod.ingredients}</p>
+              </div>
+            </div>
+            ${priceHTML}
+          `;
+
+          grid.appendChild(card);
+        }
+
+        section.appendChild(grid);
+        menuSections.appendChild(section);
+      }
+
+      // Scroll spy: update active nav based on scroll position
+      const sections = document.querySelectorAll('.cat-section');
+      const observer = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const id = entry.target.id.replace('sec-', '');
+            setActiveNav(id);
+          }
+        }
+      }, { rootMargin: '-50% 0px -40% 0px' });
+
+      sections.forEach(s => observer.observe(s));
+
+    })();
+  </script>
+
+</body>
+</html>

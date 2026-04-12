@@ -74,11 +74,15 @@
         <!-- ── GUEST VIEW ──────────────────────────────────────── -->
         <div id="guestView" class="auth-form-card">
           <p class="auth-form-greeting" style="font-size: 1.15rem;">¿Qué vas a pedir hoy? 🍕</p>
-          <div style="text-align: center; margin-top: 20px;">
+          <div style="text-align: center; margin-top: 20px; display: flex; flex-direction: column; gap: 12px;">
             <button type="button" class="auth-submit-btn" id="skipToMenuBtn"
               style="font-size: 1.2rem; padding: 16px; width: 100%;">
-              Quiero ver el menú de Dangai Food
+              🛒 Quiero hacer un pedido
             </button>
+            <a href="menu.html" id="viewMenuPdfBtn"
+              style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px 16px; border-radius: 14px; border: 2px solid rgba(255,69,0,0.3); background: rgba(255,69,0,0.05); color: var(--primary); font-size: 1rem; font-weight: 800; cursor: pointer; font-family: inherit; text-decoration: none; transition: all 0.2s; box-sizing: border-box;">
+              📄 Ver menú en PDF
+            </a>
           </div>
         </div>
 
