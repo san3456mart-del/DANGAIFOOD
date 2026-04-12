@@ -1,136 +1,153 @@
 <!doctype html>
 <html lang="es">
-
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Menú Dangai Food | Ver todos nuestros productos</title>
-  <meta name="description" content="Explora el menú completo de Dangai Food: pizzas, perros, hamburguesas, salchipapas y más. Consulta precios y productos disponibles." />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Menú Dangai Food 🍕</title>
+  <meta name="description" content="Menú completo de Dangai Food. Pizzas, perros, hamburguesas, salchipapas y más. Consulta precios." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍕</text></svg>">
 
   <style>
+    /* ═══════════════════════════════════
+       BASE
+    ═══════════════════════════════════ */
     :root {
-      --primary: #ff4500;
-      --secondary: #111827;
-      --text: #1f2937;
-      --muted: #6b7280;
-      --line: #e5e7eb;
-      --bg: #f5f6f8;
-      --card: #ffffff;
-      --success: #10b981;
+      --bg:       #0f0f11;
+      --bg2:      #18181d;
+      --card:     #1e1e25;
+      --card2:    #25252e;
+      --border:   rgba(255,255,255,0.07);
+      --text:     #f0f0f3;
+      --muted:    #8a8a9a;
+      --faint:    #3a3a4a;
+      --primary:  #ff4500;
+      --primary2: #ff6a35;
+      --orange-glow: rgba(255,69,0,0.22);
+      --success:  #10b981;
+      --radius:   20px;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--bg);
       color: var(--text);
       -webkit-font-smoothing: antialiased;
+      min-height: 100dvh;
+      overflow-x: hidden;
     }
 
-    /* ── TOPBAR ── */
+    /* ═══════════════════════════════════
+       TOPBAR
+    ═══════════════════════════════════ */
     .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: rgba(255,255,255,0.95);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--line);
-      padding: 14px 24px;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      background: rgba(15,15,17,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
+      gap: 12px;
+      padding-top: max(12px, env(safe-area-inset-top));
     }
 
     .topbar-brand {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
     .topbar-brand img {
-      height: 40px;
+      height: 36px;
       width: auto;
       border-radius: 8px;
       object-fit: contain;
     }
 
-    .topbar-brand-text h1 {
-      font-size: 1.1rem;
+    .topbar-brand-text strong {
+      display: block;
+      font-size: 1rem;
       font-weight: 800;
-      color: var(--secondary);
-      margin: 0;
+      color: var(--text);
       line-height: 1.2;
     }
 
-    .topbar-brand-text span {
-      font-size: 0.75rem;
+    .topbar-brand-text small {
+      font-size: 0.7rem;
       color: var(--muted);
       font-weight: 500;
     }
 
-    .topbar-actions {
+    .topbar-btns {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       align-items: center;
     }
 
-    .btn-back {
+    .btn-ghost {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 10px 16px;
+      gap: 5px;
+      padding: 8px 14px;
       border-radius: 12px;
-      border: 1.5px solid var(--line);
-      background: #fff;
+      border: 1px solid var(--border);
+      background: var(--card);
       color: var(--muted);
-      font-size: 0.9rem;
-      font-weight: 600;
+      font-size: 0.82rem;
+      font-weight: 700;
       cursor: pointer;
       font-family: inherit;
       text-decoration: none;
       transition: all 0.2s;
+      white-space: nowrap;
     }
 
-    .btn-back:hover {
-      background: var(--bg);
-      color: var(--secondary);
-      border-color: #9ca3af;
+    .btn-ghost:hover {
+      background: var(--card2);
+      color: var(--text);
     }
 
-    .btn-pdf {
+    .btn-primary {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 11px 20px;
+      gap: 6px;
+      padding: 9px 16px;
       border-radius: 12px;
       border: none;
-      background: var(--primary);
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
       color: #fff;
-      font-size: 0.92rem;
+      font-size: 0.85rem;
       font-weight: 800;
       cursor: pointer;
       font-family: inherit;
-      box-shadow: 0 4px 14px rgba(255,69,0,0.3);
+      box-shadow: 0 4px 16px var(--orange-glow);
       transition: all 0.2s;
+      white-space: nowrap;
     }
 
-    .btn-pdf:hover {
-      background: #e03d00;
+    .btn-primary:hover {
       transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(255,69,0,0.4);
+      box-shadow: 0 6px 22px rgba(255,69,0,0.35);
     }
 
-    /* ── HERO ── */
+    /* ═══════════════════════════════════
+       HERO
+    ═══════════════════════════════════ */
     .hero {
-      background: linear-gradient(135deg, #111827 0%, #1f2937 50%, #374151 100%);
-      padding: 40px 24px;
+      margin-top: 62px;
+      background: linear-gradient(160deg, #1a0a00 0%, #0f0f11 55%);
+      padding: 36px 20px 28px;
       text-align: center;
       position: relative;
       overflow: hidden;
@@ -140,85 +157,105 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: radial-gradient(circle at 20% 50%, rgba(255,69,0,0.15) 0%, transparent 60%),
-                  radial-gradient(circle at 80% 50%, rgba(255,120,60,0.1) 0%, transparent 60%);
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(255,69,0,0.18) 0%, transparent 70%);
     }
 
-    .hero-content {
+    .hero-logo {
       position: relative;
       z-index: 1;
-      max-width: 600px;
-      margin: 0 auto;
+      margin-bottom: 14px;
+    }
+
+    .hero-logo img {
+      height: 64px;
+      width: auto;
+      border-radius: 14px;
+      border: 2px solid rgba(255,69,0,0.3);
+      box-shadow: 0 8px 30px var(--orange-glow);
     }
 
     .hero-badge {
+      position: relative;
+      z-index: 1;
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: rgba(255,69,0,0.2);
-      border: 1px solid rgba(255,69,0,0.4);
-      color: #ff7a4d;
-      padding: 5px 14px;
+      background: rgba(255,69,0,0.15);
+      border: 1px solid rgba(255,69,0,0.3);
+      color: var(--primary2);
+      padding: 4px 13px;
       border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: 700;
+      font-size: 0.7rem;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 16px;
+      letter-spacing: 0.12em;
+      margin-bottom: 12px;
     }
 
-    .hero h2 {
-      font-size: 2rem;
+    .hero h1 {
+      position: relative;
+      z-index: 1;
+      font-size: clamp(1.6rem, 6vw, 2.2rem);
       font-weight: 900;
-      color: #fff;
-      margin-bottom: 10px;
+      color: var(--text);
       letter-spacing: -0.03em;
-    }
-
-    .hero p {
-      color: rgba(255,255,255,0.65);
-      font-size: 0.95rem;
-      line-height: 1.6;
-    }
-
-    /* ── CONTENT WRAPPER ── */
-    .page-content {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 32px 20px 60px;
-    }
-
-    /* ── NAV TABS (Sticky Category Filter) ── */
-    .cat-nav-wrap {
-      position: sticky;
-      top: 73px;
-      z-index: 90;
-      background: var(--bg);
-      padding: 12px 0;
+      line-height: 1.15;
       margin-bottom: 8px;
     }
 
-    .cat-nav {
+    .hero h1 span {
+      background: linear-gradient(135deg, var(--primary), #ff8c5a);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      position: relative;
+      z-index: 1;
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 320px;
+      margin: 0 auto;
+    }
+
+    /* ═══════════════════════════════════
+       STICKY CATEGORY NAV (chip strip)
+    ═══════════════════════════════════ */
+    .cat-strip-wrap {
+      position: sticky;
+      top: 62px;
+      z-index: 150;
+      background: rgba(15,15,17,0.9);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+    }
+
+    .cat-strip {
       display: flex;
       gap: 8px;
       overflow-x: auto;
-      padding-bottom: 4px;
       scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
     }
 
-    .cat-nav::-webkit-scrollbar { display: none; }
+    .cat-strip::-webkit-scrollbar { display: none; }
 
-    .cat-btn {
+    .cat-chip {
       flex: 0 0 auto;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 9px 18px;
+      gap: 5px;
+      padding: 7px 14px;
       border-radius: 999px;
-      border: 1.5px solid var(--line);
-      background: #fff;
+      border: 1.5px solid var(--border);
+      background: var(--card);
       color: var(--muted);
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       font-weight: 700;
       cursor: pointer;
       font-family: inherit;
@@ -226,127 +263,173 @@
       white-space: nowrap;
     }
 
-    .cat-btn:hover {
-      border-color: var(--primary);
-      color: var(--primary);
+    .cat-chip:hover {
+      border-color: rgba(255,69,0,0.4);
+      color: var(--primary2);
     }
 
-    .cat-btn.active {
+    .cat-chip.active {
       background: var(--primary);
       border-color: var(--primary);
       color: #fff;
-      box-shadow: 0 4px 12px rgba(255,69,0,0.25);
+      box-shadow: 0 4px 14px var(--orange-glow);
     }
 
-    /* ── CATEGORY SECTION ── */
+    /* ═══════════════════════════════════
+       PAGE CONTENT
+    ═══════════════════════════════════ */
+    .content {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 14px 120px;
+    }
+
+    /* ═══════════════════════════════════
+       INFO BANNER
+    ═══════════════════════════════════ */
+    .info-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: rgba(255,69,0,0.06);
+      border: 1px solid rgba(255,69,0,0.18);
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 28px;
+    }
+
+    .info-banner-icon { font-size: 1.4rem; flex-shrink: 0; margin-top: 1px; }
+
+    .info-banner p {
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .info-banner strong { color: var(--text); }
+
+    /* ═══════════════════════════════════
+       CATEGORY SECTION
+    ═══════════════════════════════════ */
     .cat-section {
-      margin-bottom: 48px;
-      scroll-margin-top: 145px;
+      margin-bottom: 44px;
+      scroll-margin-top: 136px;
     }
 
     .cat-header {
       display: flex;
       align-items: center;
       gap: 14px;
-      margin-bottom: 20px;
-      padding-bottom: 16px;
-      border-bottom: 2px solid var(--line);
+      margin-bottom: 16px;
     }
 
-    .cat-icon-wrap {
+    .cat-icon {
       width: 52px;
       height: 52px;
+      min-width: 52px;
       border-radius: 16px;
-      background: linear-gradient(135deg, rgba(255,69,0,0.12), rgba(255,120,60,0.08));
+      background: linear-gradient(135deg, rgba(255,69,0,0.15), rgba(255,120,60,0.08));
+      border: 1px solid rgba(255,69,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.7rem;
+    }
+
+    .cat-title-wrap small {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--primary2);
+      margin-bottom: 3px;
+    }
+
+    .cat-title-wrap h2 {
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    /* ═══════════════════════════════════
+       PRODUCT GRID
+    ═══════════════════════════════════ */
+    .prod-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+    }
+
+    /* ═══════════════════════════════════
+       PRODUCT CARD
+    ═══════════════════════════════════ */
+    .prod-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      cursor: default;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .prod-card::before {
+      content: '';
+      position: absolute;
+      top: -40px;
+      right: -40px;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,69,0,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .prod-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 36px rgba(0,0,0,0.35);
+      border-color: rgba(255,69,0,0.25);
+    }
+
+    .prod-top {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .prod-emoji {
+      width: 58px;
+      height: 58px;
+      min-width: 58px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(255,69,0,0.12), rgba(255,120,60,0.06));
       border: 1px solid rgba(255,69,0,0.15);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.8rem;
-      flex-shrink: 0;
+      font-size: 1.75rem;
     }
 
-    .cat-header-text h2 {
-      font-size: 1.35rem;
-      font-weight: 900;
-      color: var(--secondary);
-      margin: 0;
-      letter-spacing: -0.02em;
-    }
+    .prod-info { flex: 1; }
 
-    .cat-header-text span {
-      font-size: 0.8rem;
-      color: var(--muted);
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    /* ── PRODUCT GRID ── */
-    .product-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 14px;
-    }
-
-    /* Pizza has 3 size rows, needs more space */
-    .product-grid.pizza-grid {
-      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    }
-
-    /* ── PRODUCT CARD ── */
-    .product-card {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      padding: 18px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    .product-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-    }
-
-    .product-top {
-      display: flex;
-      align-items: flex-start;
-      gap: 14px;
-    }
-
-    .product-emoji {
-      width: 64px;
-      height: 64px;
-      min-width: 64px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, #fff8f5, #fff4f0);
-      border: 1px solid rgba(255,69,0,0.1);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.9rem;
-    }
-
-    .product-info {
-      flex: 1;
-    }
-
-    .product-info h3 {
-      font-size: 1rem;
+    .prod-name {
+      font-size: 0.98rem;
       font-weight: 800;
-      color: var(--secondary);
-      margin: 0 0 4px;
+      color: var(--text);
       line-height: 1.3;
+      margin-bottom: 5px;
     }
 
-    .product-ingredients {
-      font-size: 0.8rem;
+    .prod-ingredients {
+      font-size: 0.78rem;
       color: var(--muted);
-      line-height: 1.5;
+      line-height: 1.55;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       line-clamp: 2;
@@ -354,494 +437,473 @@
       overflow: hidden;
     }
 
-    /* Single price */
-    .product-price-single {
-      font-size: 1.25rem;
-      font-weight: 800;
-      color: var(--primary);
+    /* ── Single price ── */
+    .prod-price {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
 
-    /* Multi price (pizza sizes) */
-    .product-prices {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
+    .prod-price-tag {
+      font-size: 1.35rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
-    .price-pill {
-      background: #f9fafb;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 8px 10px;
-      text-align: center;
-    }
-
-    .price-pill-label {
-      display: block;
-      font-size: 0.65rem;
-      font-weight: 800;
+    .prod-price-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 0.06em;
+    }
+
+    /* ── Multi prices (pizzas) ── */
+    .prod-sizes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+    }
+
+    .size-pill {
+      background: var(--card2);
+      border: 1px solid var(--faint);
+      border-radius: 12px;
+      padding: 9px 6px;
+      text-align: center;
+      transition: border-color 0.15s;
+    }
+
+    .size-pill:hover { border-color: rgba(255,69,0,0.35); }
+
+    .size-pill-name {
+      display: block;
+      font-size: 0.6rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
       color: var(--muted);
       margin-bottom: 3px;
     }
 
-    .price-pill-value {
+    .size-pill-price {
       display: block;
       font-size: 0.95rem;
-      font-weight: 800;
-      color: var(--primary);
+      font-weight: 900;
+      color: var(--primary2);
     }
 
-    .price-pill-sub {
+    .size-pill-cm {
       display: block;
-      font-size: 0.62rem;
-      color: var(--muted);
-      margin-top: 1px;
+      font-size: 0.58rem;
+      color: var(--faint);
+      margin-top: 2px;
     }
 
-    /* ── LEGEND / INFO BANNER ── */
-    .info-banner {
-      background: linear-gradient(135deg, rgba(255,69,0,0.06), rgba(255,120,60,0.03));
-      border: 1px solid rgba(255,69,0,0.15);
-      border-radius: 16px;
-      padding: 16px 20px;
-      margin-bottom: 28px;
+    /* ═══════════════════════════════════
+       FLOATING ORDER BUTTON
+    ═══════════════════════════════════ */
+    .fab-order {
+      position: fixed;
+      bottom: calc(20px + env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 300;
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 10px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary2) 100%);
+      color: #fff;
+      font-weight: 800;
+      font-size: 1rem;
+      padding: 15px 28px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      box-shadow: 0 8px 32px var(--orange-glow), 0 2px 8px rgba(0,0,0,0.4);
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      white-space: nowrap;
     }
 
-    .info-banner-icon {
-      font-size: 2rem;
-      flex-shrink: 0;
+    .fab-order:hover {
+      transform: translateX(-50%) translateY(-2px);
+      box-shadow: 0 12px 40px rgba(255,69,0,0.45), 0 4px 12px rgba(0,0,0,0.5);
     }
 
-    .info-banner p {
-      font-size: 0.85rem;
-      color: var(--muted);
-      line-height: 1.6;
+    .fab-order:active {
+      transform: translateX(-50%) scale(0.97);
     }
 
-    .info-banner strong {
-      color: var(--text);
+    /* ═══════════════════════════════════
+       DIVIDER
+    ═══════════════════════════════════ */
+    .section-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--faint), transparent);
+      margin: 0 0 44px;
     }
 
-    /* ── FOOTER PDF NOTE ── */
-    .pdf-note {
+    /* ═══════════════════════════════════
+       FOOTER
+    ═══════════════════════════════════ */
+    .page-footer {
       text-align: center;
-      padding: 24px;
+      padding: 24px 20px 12px;
       color: var(--muted);
-      font-size: 0.85rem;
-      border-top: 1px solid var(--line);
-      margin-top: 40px;
+      font-size: 0.78rem;
+      line-height: 1.7;
     }
 
-    /* ═══════════════════════════════════════════════
-       PRINT / PDF STYLES
-    ═══════════════════════════════════════════════ */
+    .page-footer strong { color: var(--text); }
+
+    /* ═══════════════════════════════════
+       ANIMATIONS
+    ═══════════════════════════════════ */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .cat-section { animation: fadeUp 0.4s ease both; }
+
+    /* ═══════════════════════════════════
+       PRINT / PDF
+    ═══════════════════════════════════ */
     @media print {
-      @page {
-        margin: 15mm 12mm;
-        size: A4;
+      @page { size: A4; margin: 12mm 10mm; }
+
+      :root {
+        --bg: #fff; --bg2: #fff; --card: #fff; --card2: #f5f5f5;
+        --border: #e0e0e0; --faint: #ccc;
+        --text: #111; --muted: #555;
+        --primary: #ff4500; --primary2: #ff6a35;
       }
 
-      body {
-        background: #fff;
-        color: #000;
-        font-size: 10pt;
-      }
+      body { background: #fff !important; }
 
-      .topbar,
-      .btn-pdf,
-      .btn-back,
-      .cat-nav-wrap,
-      .topbar-actions,
-      .pdf-note,
-      .hero p,
-      .info-banner {
-        display: none !important;
-      }
+      .topbar, .cat-strip-wrap, .fab-order, .info-banner,
+      .btn-ghost, .btn-primary, .page-footer { display: none !important; }
 
       .hero {
-        background: #111827 !important;
+        margin-top: 0 !important;
+        background: #111 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
-        padding: 20mm 12mm 14mm;
-        text-align: center;
+        padding: 16mm 10mm 12mm;
         page-break-after: avoid;
       }
 
-      .hero-badge {
-        background: rgba(255,69,0,0.2) !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-        color: #ff7a4d !important;
+      .hero h1 { color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .hero h1 span { -webkit-text-fill-color: #ff6a35 !important; }
+      .hero-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .hero-sub { color: rgba(255,255,255,0.6) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+      .content { padding: 8mm 0 0 !important; }
+
+      .cat-section { page-break-inside: avoid; margin-bottom: 10mm; animation: none; }
+      .cat-header { margin-bottom: 7pt; }
+
+      .cat-icon {
+        background: #fff6f3 !important;
+        border: 1px solid #fcd0bc !important;
+        width: 38pt; height: 38pt; min-width: 38pt; font-size: 1.3rem;
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
       }
 
-      .hero h2 {
-        font-size: 22pt;
-        color: #fff !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
+      .cat-title-wrap h2 { font-size: 12pt; color: #111 !important; }
+      .cat-title-wrap small { color: #ff4500 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+      .prod-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 5pt; }
+      .prod-grid.pizza-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+      .prod-card {
+        padding: 8pt; gap: 6pt; box-shadow: none !important;
+        border: 1px solid #e0e0e0 !important;
+        border-radius: 8pt; transform: none !important;
+        background: #fff !important;
       }
 
-      .page-content {
-        padding: 10mm 0;
-      }
+      .prod-card::before { display: none; }
 
-      .cat-section {
-        page-break-inside: avoid;
-        margin-bottom: 14mm;
-      }
-
-      .cat-header {
-        page-break-after: avoid;
-      }
-
-      .product-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 6pt;
-      }
-
-      .product-grid.pizza-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .product-card {
-        padding: 10pt;
-        gap: 7pt;
-        page-break-inside: avoid;
-        border: 1px solid #e5e7eb;
-        border-radius: 10pt;
-        box-shadow: none !important;
-        transform: none !important;
-      }
-
-      .product-card:hover {
-        transform: none !important;
-        box-shadow: none !important;
-      }
-
-      .product-emoji {
-        width: 44pt;
-        height: 44pt;
-        min-width: 44pt;
-        font-size: 1.4rem;
+      .prod-emoji {
+        width: 38pt; height: 38pt; min-width: 38pt; font-size: 1.2rem;
         border-radius: 8pt;
-        background: #fff9f7 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
+        background: #fff6f3 !important; border-color: #fcd0bc !important;
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
       }
 
-      .product-info h3 {
-        font-size: 9pt;
+      .prod-name { font-size: 8pt; color: #111 !important; }
+      .prod-ingredients { font-size: 6.5pt; color: #666 !important; -webkit-line-clamp: 3; line-clamp: 3; }
+
+      .prod-price-tag { font-size: 10pt; -webkit-text-fill-color: #ff4500 !important; color: #ff4500 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .prod-price-label { font-size: 6pt; color: #888 !important; }
+
+      .size-pill {
+        background: #f5f5f5 !important; border: 1px solid #ddd !important;
+        padding: 5pt 4pt; border-radius: 6pt;
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
       }
 
-      .product-ingredients {
-        font-size: 7.5pt;
-        -webkit-line-clamp: 3;
-        line-clamp: 3;
-      }
+      .size-pill-name { font-size: 5.5pt; color: #777 !important; }
+      .size-pill-price { font-size: 8pt; color: #ff4500 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .size-pill-cm { font-size: 5pt; color: #aaa !important; }
 
-      .product-price-single {
-        font-size: 11pt;
-        color: #ff4500 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-
-      .price-pill {
-        padding: 4pt 6pt;
-        border: 1px solid #e5e7eb;
-        background: #f9fafb !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-
-      .price-pill-label {
-        font-size: 6pt;
-      }
-
-      .price-pill-value {
-        font-size: 8.5pt;
-        color: #ff4500 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-
-      .price-pill-sub {
-        font-size: 5.5pt;
-      }
-
-      .cat-icon-wrap {
-        width: 36pt;
-        height: 36pt;
-        min-width: 36pt;
-        font-size: 1.2rem;
-        background: #fff9f7 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-
-      .cat-header-text h2 {
-        font-size: 13pt;
-      }
-
-      .cat-header {
-        border-bottom: 1.5pt solid #e5e7eb;
-        padding-bottom: 8pt;
-        margin-bottom: 10pt;
-      }
-
-      .topbar-brand {
-        display: flex !important;
-      }
-
-      .topbar {
-        display: none !important;
-      }
+      .section-divider { background: #e0e0e0 !important; margin-bottom: 8mm; }
     }
 
-    /* ── RESPONSIVE ── */
-    @media (max-width: 640px) {
-      .hero h2 { font-size: 1.5rem; }
-      .topbar-brand-text span { display: none; }
-      .btn-pdf span { display: none; }
-      .product-grid { grid-template-columns: 1fr; }
-      .product-grid.pizza-grid { grid-template-columns: 1fr; }
+    /* ═══════════════════════════════════
+       RESPONSIVE MOBILE
+    ═══════════════════════════════════ */
+    @media (max-width: 480px) {
+      .hero { padding: 28px 16px 22px; }
+      .hero h1 { font-size: 1.65rem; }
+      .content { padding: 18px 12px 110px; }
+      .prod-grid { grid-template-columns: 1fr; }
+      .topbar-brand-text small { display: none; }
+    }
+
+    @media (min-width: 481px) and (max-width: 760px) {
+      .prod-grid { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
 
 <body>
 
-  <!-- TOPBAR -->
+  <!-- ══ TOPBAR ══ -->
   <header class="topbar">
     <div class="topbar-brand">
-      <img src="public/DANGAI.jpg" alt="Dangai Food" />
+      <img src="public/DANGAI.jpg" alt="Dangai Food Logo" />
       <div class="topbar-brand-text">
-        <h1>Dangai Food</h1>
-        <span>Menú completo de productos</span>
+        <strong>Dangai Food</strong>
+        <small>Menú completo</small>
       </div>
     </div>
-    <div class="topbar-actions">
-      <a href="index.html" class="btn-back" id="btnBackToStore">
-        ← Volver
-      </a>
-      <button class="btn-pdf" id="btnDownloadPdf" onclick="window.print()">
-        📄 <span>Descargar PDF</span>
-      </button>
+    <div class="topbar-btns">
+      <a href="index.html" class="btn-ghost" id="btnBack">← Volver</a>
+      <button class="btn-primary" id="btnPdf" onclick="window.print()">📄 PDF</button>
     </div>
   </header>
 
-  <!-- HERO -->
-  <div class="hero">
-    <div class="hero-content">
-      <div class="hero-badge">🍕 Menú oficial</div>
-      <h2>Nuestro Menú Completo</h2>
-      <p>Explora todas nuestras categorías y precios. ¡Pide cuando quieras!</p>
+  <!-- ══ HERO ══ -->
+  <section class="hero">
+    <div class="hero-logo">
+      <img src="public/DANGAI.jpg" alt="Dangai Food" />
+    </div>
+    <div class="hero-badge">🔥 Menú oficial 2026</div>
+    <h1>Nuestro Menú<br><span>Completo</span></h1>
+    <p class="hero-sub">Explora todo lo que tenemos para ti. ¡Pide cuando quieras!</p>
+  </section>
+
+  <!-- ══ CATEGORY STRIP ══ -->
+  <div class="cat-strip-wrap">
+    <div class="cat-strip" id="catStrip">
+      <!-- JS filled -->
     </div>
   </div>
 
-  <!-- PAGE CONTENT -->
-  <div class="page-content">
-
-    <!-- Category Nav -->
-    <div class="cat-nav-wrap">
-      <div class="cat-nav" id="catNav">
-        <!-- Filled by JS -->
-      </div>
-    </div>
+  <!-- ══ CONTENT ══ -->
+  <main class="content">
 
     <!-- Info Banner -->
     <div class="info-banner">
       <div class="info-banner-icon">ℹ️</div>
       <p>
-        <strong>Solo para consulta.</strong> Esta es la vista del menú para que puedas explorar nuestros productos.
-        Cuando estés listo para pedir, haz clic en <strong>"Volver"</strong> y ¡listo! 🚀
-        También puedes <strong>guardar esta página como PDF</strong> con el botón de arriba.
+        <strong>Solo para consultar.</strong> Navega las categorías y explora precios.
+        Cuando quieras pedir, toca el botón <strong>"Hacer Pedido"</strong> abajo 🚀
+        O guarda esta página como PDF con el botón de arriba.
       </p>
     </div>
 
-    <!-- Menu Sections -->
-    <div id="menuSections">
-      <!-- Filled by JS -->
+    <!-- Sections filled by JS -->
+    <div id="menuContent"></div>
+
+    <div class="page-footer">
+      <p>🍕 <strong>Dangai Food</strong> · Pedidos por WhatsApp</p>
+      <p>Todos los precios en pesos colombianos (COP)</p>
     </div>
 
-    <div class="pdf-note">
-      <p>📍 Pedidos por WhatsApp · Dangai Food © 2026 · Todos los precios en COP</p>
-    </div>
+  </main>
 
-  </div>
+  <!-- ══ FLOATING CTA ══ -->
+  <a href="index.html" class="fab-order" id="fabOrder">
+    🛒 Hacer Pedido
+  </a>
 
   <!-- DATA -->
   <script src="data.js?v=18"></script>
 
   <script>
-    (function () {
-      const cfg = window.RestaurantAppConfig;
-      const products = cfg.defaultProducts;
-      const categories = cfg.categories;
-      const pizzaSizes = cfg.pizzaSizes;
+  (function () {
+    const cfg   = window.RestaurantAppConfig;
+    const prods = cfg.defaultProducts;
+    const cats  = cfg.categories;
 
-      const CATEGORY_EMOJIS = {
-        pizzas: '🍕',
-        perros: '🌭',
-        hamburguesas: '🍔',
-        desgranados: '🌽',
-        sandwich: '🥪',
-        salchipapas: '🍟',
-        salvajadas: '🌋',
-        asado: '🍖',
-        infantil: '🎁',
-        bebidas: '🥤'
-      };
+    const EMOJI = {
+      pizzas:'🍕', perros:'🌭', hamburguesas:'🍔',
+      desgranados:'🌽', sandwich:'🥪', salchipapas:'🍟',
+      salvajadas:'🌋', asado:'🍖', infantil:'🎁', bebidas:'🥤'
+    };
 
-      const PIZZA_SIZE_INFO = {
-        pizzas_personal: { short: 'Personal', sub: '27 cm' },
-        pizzas_small:    { short: 'Small',    sub: '35 cm' },
-        pizzas_medium:   { short: 'Medium',   sub: '40 cm' }
-      };
+    const SIZES = {
+      pizzas_personal: { short:'Personal', cm:'27 cm' },
+      pizzas_small:    { short:'Small',    cm:'35 cm' },
+      pizzas_medium:   { short:'Medium',   cm:'40 cm' }
+    };
 
-      function formatCOP(n) {
-        return '$' + Number(n).toLocaleString('es-CO');
-      }
+    function cop(n) {
+      return '$' + Number(n).toLocaleString('es-CO');
+    }
 
-      // Group products by category
-      const grouped = {};
-      for (const prod of products) {
-        if (!grouped[prod.category]) grouped[prod.category] = [];
-        grouped[prod.category].push(prod);
-      }
+    // Group by category
+    const grouped = {};
+    for (const p of prods) {
+      (grouped[p.category] = grouped[p.category] || []).push(p);
+    }
 
-      const catOrder = Object.keys(categories);
+    const order = Object.keys(cats);
 
-      // Build category nav
-      const catNav = document.getElementById('catNav');
-      const allBtn = document.createElement('button');
-      allBtn.className = 'cat-btn active';
-      allBtn.textContent = '🍽️ Todo';
-      allBtn.id = 'cat-all';
-      allBtn.addEventListener('click', () => {
-        scrollToTop();
-        setActiveNav('all');
+    /* ─── Build category strip ─── */
+    const strip = document.getElementById('catStrip');
+
+    const allChip = document.createElement('button');
+    allChip.className = 'cat-chip active';
+    allChip.id = 'chip-all';
+    allChip.innerHTML = '🍽️ Todo';
+    allChip.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setActive('all');
+    });
+    strip.appendChild(allChip);
+
+    for (const key of order) {
+      if (!grouped[key]) continue;
+      const chip = document.createElement('button');
+      chip.className = 'cat-chip';
+      chip.id = `chip-${key}`;
+      chip.innerHTML = `${EMOJI[key] || '🍽️'} ${cats[key].label}`;
+      chip.addEventListener('click', () => {
+        const sec = document.getElementById(`sec-${key}`);
+        if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+        setActive(key);
       });
-      catNav.appendChild(allBtn);
+      strip.appendChild(chip);
+    }
 
-      for (const catKey of catOrder) {
-        if (!grouped[catKey]) continue;
-        const info = categories[catKey];
-        const btn = document.createElement('button');
-        btn.className = 'cat-btn';
-        btn.id = `cat-nav-${catKey}`;
-        btn.textContent = (CATEGORY_EMOJIS[catKey] || '') + ' ' + info.label;
-        btn.addEventListener('click', () => {
-          const section = document.getElementById(`sec-${catKey}`);
-          if (section) section.scrollIntoView({ behavior: 'smooth' });
-          setActiveNav(catKey);
-        });
-        catNav.appendChild(btn);
+    function setActive(key) {
+      document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+      const t = key === 'all'
+        ? document.getElementById('chip-all')
+        : document.getElementById(`chip-${key}`);
+      if (t) {
+        t.classList.add('active');
+        t.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
       }
+    }
 
-      function setActiveNav(key) {
-        document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-        const target = key === 'all' ? document.getElementById('cat-all') : document.getElementById(`cat-nav-${key}`);
-        if (target) target.classList.add('active');
-      }
+    /* ─── Build sections ─── */
+    const container = document.getElementById('menuContent');
 
-      function scrollToTop() {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
+    order.forEach((key, idx) => {
+      const items = grouped[key];
+      if (!items || !items.length) return;
 
-      // Build sections
-      const menuSections = document.getElementById('menuSections');
+      const isPizza = key === 'pizzas';
+      const catInfo = cats[key];
 
-      for (const catKey of catOrder) {
-        const items = grouped[catKey];
-        if (!items || items.length === 0) continue;
+      // Section
+      const sec = document.createElement('section');
+      sec.className = 'cat-section';
+      sec.id = `sec-${key}`;
+      sec.style.animationDelay = `${idx * 0.04}s`;
 
-        const catInfo = categories[catKey];
-        const isPizza = catKey === 'pizzas';
-
-        const section = document.createElement('section');
-        section.className = 'cat-section';
-        section.id = `sec-${catKey}`;
-
-        // Header
-        const header = document.createElement('div');
-        header.className = 'cat-header';
-        header.innerHTML = `
-          <div class="cat-icon-wrap">${CATEGORY_EMOJIS[catKey] || '🍽️'}</div>
-          <div class="cat-header-text">
-            <span>${catInfo.subtitle || items.length + ' productos'}</span>
+      // Header
+      sec.innerHTML = `
+        <div class="cat-header">
+          <div class="cat-icon">${EMOJI[key] || '🍽️'}</div>
+          <div class="cat-title-wrap">
+            <small>${catInfo.subtitle || items.length + ' productos'}</small>
             <h2>${catInfo.label}</h2>
           </div>
-        `;
-        section.appendChild(header);
+        </div>
+      `;
 
-        // Grid
-        const grid = document.createElement('div');
-        grid.className = isPizza ? 'product-grid pizza-grid' : 'product-grid';
+      // Grid
+      const grid = document.createElement('div');
+      grid.className = isPizza ? 'prod-grid pizza-grid' : 'prod-grid';
 
-        for (const prod of items) {
-          const card = document.createElement('div');
-          card.className = 'product-card';
+      for (const prod of items) {
+        const card = document.createElement('div');
+        card.className = 'prod-card';
 
-          // Determine prices
-          let priceHTML = '';
-          const priceKeys = Object.keys(prod.prices);
+        const priceKeys = Object.keys(prod.prices);
+        let priceHTML = '';
 
-          if (isPizza) {
-            // Pizza: show 3 size pills
-            const pills = priceKeys.map(k => {
-              const sizeInfo = PIZZA_SIZE_INFO[k] || { short: k, sub: '' };
-              return `
-                <div class="price-pill">
-                  <span class="price-pill-label">${sizeInfo.short}</span>
-                  <span class="price-pill-value">${formatCOP(prod.prices[k])}</span>
-                  <span class="price-pill-sub">${sizeInfo.sub}</span>
-                </div>
-              `;
-            }).join('');
-            priceHTML = `<div class="product-prices">${pills}</div>`;
-          } else {
-            const price = prod.prices[priceKeys[0]];
-            priceHTML = `<div class="product-price-single">${formatCOP(price)}</div>`;
-          }
-
-          card.innerHTML = `
-            <div class="product-top">
-              <div class="product-emoji">${CATEGORY_EMOJIS[catKey] || '🍽️'}</div>
-              <div class="product-info">
-                <h3>${prod.name}</h3>
-                <p class="product-ingredients">${prod.ingredients}</p>
-              </div>
-            </div>
-            ${priceHTML}
-          `;
-
-          grid.appendChild(card);
+        if (isPizza) {
+          const pills = priceKeys.map(k => {
+            const s = SIZES[k] || { short: k, cm: '' };
+            return `
+              <div class="size-pill">
+                <span class="size-pill-name">${s.short}</span>
+                <span class="size-pill-price">${cop(prod.prices[k])}</span>
+                <span class="size-pill-cm">${s.cm}</span>
+              </div>`;
+          }).join('');
+          priceHTML = `<div class="prod-sizes">${pills}</div>`;
+        } else {
+          const val = prod.prices[priceKeys[0]];
+          priceHTML = `
+            <div class="prod-price">
+              <span class="prod-price-tag">${cop(val)}</span>
+              <span class="prod-price-label">Precio</span>
+            </div>`;
         }
 
-        section.appendChild(grid);
-        menuSections.appendChild(section);
+        card.innerHTML = `
+          <div class="prod-top">
+            <div class="prod-emoji">${EMOJI[key] || '🍽️'}</div>
+            <div class="prod-info">
+              <div class="prod-name">${prod.name}</div>
+              <div class="prod-ingredients">${prod.ingredients}</div>
+            </div>
+          </div>
+          ${priceHTML}
+        `;
+
+        grid.appendChild(card);
       }
 
-      // Scroll spy: update active nav based on scroll position
-      const sections = document.querySelectorAll('.cat-section');
-      const observer = new IntersectionObserver((entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            const id = entry.target.id.replace('sec-', '');
-            setActiveNav(id);
-          }
+      sec.appendChild(grid);
+
+      // Divider between sections (not last)
+      if (idx < order.filter(k => grouped[k]).length - 1) {
+        const div = document.createElement('div');
+        div.className = 'section-divider';
+        div.style.marginTop = '32px';
+        sec.appendChild(div);
+      }
+
+      container.appendChild(sec);
+    });
+
+    /* ─── Scroll spy ─── */
+    const sections = document.querySelectorAll('.cat-section');
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          setActive(e.target.id.replace('sec-', ''));
         }
-      }, { rootMargin: '-50% 0px -40% 0px' });
+      });
+    }, { rootMargin: '-45% 0px -45% 0px' });
 
-      sections.forEach(s => observer.observe(s));
+    sections.forEach(s => io.observe(s));
 
-    })();
+  })();
   </script>
 
 </body>
