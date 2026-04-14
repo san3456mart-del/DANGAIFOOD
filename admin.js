@@ -578,19 +578,50 @@ function renderInventory() {
   const products = getProducts();
   if (!inventoryList) return;
   inventoryCount.textContent = `${products.length} productos`;
-  inventoryList.innerHTML = products.map(p => `
-    <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #eee;">
-      <div>
-        <strong>${escapeHTML(p.name)}</strong>
-        <div style="font-size:0.8rem; color:#666;">${escapeHTML(p.ingredients)}</div>
+  inventoryList.innerHTML = products.map(p => {
+    const enabled = p.enabled !== false; // true por defecto
+    return `
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid #eee; gap:10px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:0;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <strong style="${enabled ? '' : 'color:#9ca3af; text-decoration:line-through;'}">${escapeHTML(p.name)}</strong>
+          <span style="font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:999px;
+            background:${enabled ? '#d1fae5' : '#fee2e2'}; color:${enabled ? '#059669' : '#dc2626'};">
+            ${enabled ? '✅ Activo' : '🚫 Desactivado'}
+          </span>
+        </div>
+        <div style="font-size:0.8rem; color:#666; margin-top:2px;">${escapeHTML(p.ingredients)}</div>
       </div>
-      <div>
-        <button onclick="editProduct('${p.id}')" class="mini-btn">Editar</button>
-        <button onclick="deleteProduct('${p.id}')" class="mini-btn danger">Borrar</button>
+      <div style="display:flex; gap:6px; flex-shrink:0; flex-wrap:wrap; align-items:center;">
+        <button onclick="toggleProductEnabled('${p.id}')" class="mini-btn"
+          style="background:${enabled ? 'rgba(220,38,38,0.08)' : 'rgba(5,150,105,0.08)'};
+                 color:${enabled ? '#dc2626' : '#059669'};
+                 border-color:${enabled ? 'rgba(220,38,38,0.3)' : 'rgba(5,150,105,0.3)'};
+                 font-weight:700;">
+          ${enabled ? '🚫 Desactivar' : '✅ Activar'}
+        </button>
+        <button onclick="editProduct('${p.id}')" class="mini-btn">✏️ Editar</button>
+        <button onclick="deleteProduct('${p.id}')" class="mini-btn danger">🗑️ Borrar</button>
       </div>
     </div>
-  `).join('') || '<div class="empty-state">No hay productos.</div>';
+  `;
+  }).join('') || '<div class="empty-state">No hay productos.</div>';
 }
+
+window.toggleProductEnabled = (id) => {
+  const products = getProducts();
+  const updated = products.map(p => {
+    if (p.id !== id) return p;
+    const newState = p.enabled === false ? true : false;
+    return { ...p, enabled: newState };
+  });
+  saveProducts(updated);
+  renderInventory();
+  const product = updated.find(p => p.id === id);
+  showToast(product?.enabled !== false
+    ? `✅ "${product?.name}" activado en el menú.`
+    : `🚫 "${product?.name}" desactivado del menú.`);
+};
 
 window.editProduct = (id) => {
   const p = getProducts().find(x => x.id === id);

@@ -290,7 +290,7 @@
       removableOptions: item.removableOptions,
       prices: item.prices,
       costs: deriveCosts(item.prices),
-      stock: Object.keys(item.prices).reduce((acc, k) => { acc[k] = 12; return acc; }, {})
+      stock: Object.keys(item.prices).reduce((acc, k) => { acc[k] = 16; return acc; }, {})
     };
   });
 

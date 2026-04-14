@@ -302,7 +302,7 @@ function renderSizeTabs() {
 }
 
 function getProductsForCategory(catKey) {
-  return getProducts().filter((product) => product.category === catKey);
+  return getProducts().filter((product) => product.category === catKey && product.enabled !== false);
 }
 
 function renderMenu() {
@@ -581,8 +581,7 @@ function addToCartFromModal() {
   const sizeKey  = _modalSizeKey;
   const info     = cfg.sizes[sizeKey] || { label: '', shortLabel: '', subtitle: '' };
   const products = getProducts();
-  const stock    = Number(products.find(p => p.id === product.id)?.stock?.[sizeKey] || 0);
-  if (stock < 1) return toastMessage('Ese tamaño está agotado.');
+  // Stock siempre disponible — sin restricción de stock
 
   const extras    = getExtras();
   const extrasArr = Object.entries(_modalExtras)
