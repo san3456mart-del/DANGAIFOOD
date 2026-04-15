@@ -164,7 +164,8 @@ function getProducts() {
   });
 
   if (repairNeeded) {
-    setJson(storage.products, current);
+    // Solo corregir en localStorage — no disparar sync Firebase
+    try { localStorage.setItem(storage.products, JSON.stringify(current)); } catch(e) {}
   }
 
   return current;
@@ -923,22 +924,9 @@ async function submitOrder() {
       });
       return { ...product, stock: nextStock };
     });
-    // Guardar stock actualizado solo en localStorage (sin tocar Firebase con un set() completo
-    // que podría sobrescribir cambios concurrentes del admin)
+    // Stock: solo guardar en localStorage, Firebase actualiza via syncKey cuando
+    // el admin recarga o hace cambios. Evitar set() completo que causa conflictos.
     try { localStorage.setItem(storage.products, JSON.stringify(updatedProducts)); } catch(e) {}
-    if (window.FirebaseDB) {
-      // Actualización granular: solo el stock de cada producto afectado
-      const stockUpdates = {};
-      cart.forEach((item) => {
-        const prod = updatedProducts.find(p => p.id === item.productId);
-        if (prod) stockUpdates[`${storage.products}/${prod.id}/stock`] = prod.stock;
-      });
-      // Usar update en la raíz de la DB para múltiples rutas a la vez
-      Object.entries(stockUpdates).forEach(([path, val]) => {
-        window.FirebaseDB.update(path.split('/').slice(0,-1).join('/'), { stock: val })
-          .catch(err => console.warn('Stock sync error:', err));
-      });
-    }
 
     // Mark coupon as redeemed if used
     if (appliedCouponId) {
@@ -1358,12 +1346,15 @@ renderMenu();
 renderCart();
 setStep(1);
 
-// Auto-refresh client order tracking when Firebase pushes status updates
+// Auto-refresh cuando Firebase empuja cambios (pedidos, productos, estados)
 window.addEventListener('storage', () => {
   renderOrdersHistory();
+  // Re-renderizar menu si los productos cambiaron (admin agregó/modificó algo)
+  renderSizeTabs();
+  renderMenu();
 });
 
-// Refresh order history every 5 seconds (reduced from 3s to limit Firebase reads)
+// Refresh order history every 5 seconds
 setInterval(() => {
   renderOrdersHistory();
 }, 5000);
