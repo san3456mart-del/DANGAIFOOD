@@ -740,9 +740,30 @@
 
   <script>
   (function () {
-    const cfg   = window.RestaurantAppConfig;
-    const prods = cfg.defaultProducts;
-    const cats  = cfg.categories;
+    const cfg  = window.RestaurantAppConfig;
+    const cats = cfg.categories;
+
+    // ── Leer productos desde localStorage (admin) o usar los defaults ──
+    const STORAGE_KEY = cfg.storageKeys?.products || 'restaurant_products_v3';
+    let prods;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        let parsed = JSON.parse(raw);
+        // Puede venir como objeto indexado (Firebase) o array
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          parsed = Object.values(parsed);
+        }
+        prods = Array.isArray(parsed) && parsed.length ? parsed : cfg.defaultProducts;
+      } else {
+        prods = cfg.defaultProducts;
+      }
+    } catch (e) {
+      prods = cfg.defaultProducts;
+    }
+
+    // Filtrar productos desactivados
+    prods = prods.filter(p => p.enabled !== false);
 
     const EMOJI = {
       pizzas:'🍕', perros:'🌭', hamburguesas:'🍔',
