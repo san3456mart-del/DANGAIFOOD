@@ -52,17 +52,31 @@ const money = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currenc
 const getJson = (key, fallback) => {
   let data;
   try {
-    data = JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    data = JSON.parse(raw);
   } catch(e) {
     return fallback;
   }
-  // Convert object to array if it's the orders or users key (handles granular Firebase updates)
-  if ((key === storage.orders || key === storage.users) && data && !Array.isArray(data)) {
-    if (key === storage.orders) {
-      return Object.values(data).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  // Claves que siempre deben ser arrays
+  const arrayKeys = [
+    storage.products, storage.orders, storage.users,
+    storage.expenses, storage.extras, storage.cashCounts
+  ];
+
+  if (arrayKeys.includes(key)) {
+    // Firebase puede devolver objetos con índices numéricos en lugar de arrays
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      data = Object.values(data);
     }
-    return Object.values(data);
+    if (!Array.isArray(data)) return fallback;
+
+    if (key === storage.orders) {
+      data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
   }
+
   return data;
 };
 
@@ -115,8 +129,24 @@ function toastMessage(message) {
 }
 
 function ensureProducts() {
-  const current = getJson(storage.products, []);
-  if (!current.length) setJson(storage.products, cfg.defaultProducts);
+  const raw = localStorage.getItem(storage.products);
+  if (!raw) {
+    // Nada en localStorage → sembrar defaults (sin tocar Firebase)
+    try { localStorage.setItem(storage.products, JSON.stringify(cfg.defaultProducts)); } catch(e) {}
+    return;
+  }
+  // Si hay datos pero no son array válido (raro), no sobreescribir
+  try {
+    let parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      parsed = Object.values(parsed);
+    }
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      try { localStorage.setItem(storage.products, JSON.stringify(cfg.defaultProducts)); } catch(e) {}
+    }
+  } catch(e) {
+    try { localStorage.setItem(storage.products, JSON.stringify(cfg.defaultProducts)); } catch(e2) {}
+  }
 }
 
 function getProducts() {
