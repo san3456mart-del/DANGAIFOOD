@@ -840,8 +840,7 @@ async function submitOrder() {
   }
 
   const products = getProducts();
-  const stockCheck = cart.every((line) => Number(products.find((p) => p.id === line.productId)?.stock?.[line.sizeKey] || 0) > 0);
-  if (!stockCheck) return toastMessage('Hay productos agotados. Actualiza el menú.');
+  // Nota: no bloqueamos por stock — el stock es solo informativo para el admin.
 
   submitOrderBtn.disabled = true;
   submitOrderBtn.textContent = 'Enviando...';
@@ -894,7 +893,22 @@ async function submitOrder() {
       });
       return { ...product, stock: nextStock };
     });
-    await setJson(storage.products, updatedProducts);
+    // Guardar stock actualizado solo en localStorage (sin tocar Firebase con un set() completo
+    // que podría sobrescribir cambios concurrentes del admin)
+    try { localStorage.setItem(storage.products, JSON.stringify(updatedProducts)); } catch(e) {}
+    if (window.FirebaseDB) {
+      // Actualización granular: solo el stock de cada producto afectado
+      const stockUpdates = {};
+      cart.forEach((item) => {
+        const prod = updatedProducts.find(p => p.id === item.productId);
+        if (prod) stockUpdates[`${storage.products}/${prod.id}/stock`] = prod.stock;
+      });
+      // Usar update en la raíz de la DB para múltiples rutas a la vez
+      Object.entries(stockUpdates).forEach(([path, val]) => {
+        window.FirebaseDB.update(path.split('/').slice(0,-1).join('/'), { stock: val })
+          .catch(err => console.warn('Stock sync error:', err));
+      });
+    }
 
     // Mark coupon as redeemed if used
     if (appliedCouponId) {
